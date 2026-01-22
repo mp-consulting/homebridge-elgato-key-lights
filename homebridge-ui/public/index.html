@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Elgato Key Lights</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    .device-card {
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .device-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3) !important;
+    }
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .status-online {
+      background-color: #198754;
+      box-shadow: 0 0 6px #198754;
+    }
+    .status-offline {
+      background-color: #dc3545;
+    }
+    .info-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .spinner-discover {
+      width: 1rem;
+      height: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex align-items-center mb-2">
+      <i class="bi bi-lightbulb-fill fs-2 text-warning me-3"></i>
+      <div>
+        <h1 class="h3 mb-0">Elgato Key Lights</h1>
+        <p class="text-body-secondary mb-0">Discover and manage your Key Lights on the network</p>
+      </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card border-0 shadow-sm mt-4">
+      <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
+        <h5 class="mb-0">
+          <i class="bi bi-broadcast me-2"></i>Discovered Devices
+        </h5>
+        <button class="btn btn-primary" id="discoverBtn" onclick="discoverDevices()">
+          <i class="bi bi-search me-1"></i> Discover
+        </button>
+      </div>
+      <div class="card-body p-0">
+        <div id="deviceList">
+          <div class="text-center py-5">
+            <i class="bi bi-router fs-1 text-body-secondary"></i>
+            <p class="text-body-secondary mt-2 mb-0">Click "Discover" to search for Key Lights on your network</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Device Details Modal -->
+  <div class="modal fade" id="deviceModal" tabindex="-1" aria-labelledby="deviceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deviceModalLabel">
+            <i class="bi bi-lightbulb me-2"></i>
+            <span id="modalDeviceName">Device Details</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="modalContent">
+          <!-- Dynamic content -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header">
+        <i class="bi bi-info-circle me-2" id="toastIcon"></i>
+        <strong class="me-auto" id="toastTitle">Notification</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body" id="toastMessage"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script>
+    let discoveredDevices = [];
+    let deviceModal;
+    let toast;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      deviceModal = new bootstrap.Modal(document.getElementById('deviceModal'));
+      toast = new bootstrap.Toast(document.getElementById('toast'));
+    });
+
+    async function discoverDevices() {
+      const btn = document.getElementById('discoverBtn');
+      const deviceList = document.getElementById('deviceList');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-discover me-1" role="status" aria-hidden="true"></span> Scanning...';
+
+      deviceList.innerHTML = `
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="text-body-secondary mb-0">Searching for devices on the network...</p>
+        </div>
+      `;
+
+      try {
+        const devices = await homebridge.request('/discover');
+        discoveredDevices = devices;
+        renderDevices(devices);
+        showToast(`Found ${devices.length} device(s)`, 'success');
+      } catch (error) {
+        deviceList.innerHTML = `
+          <div class="text-center py-5">
+            <i class="bi bi-exclamation-triangle fs-1 text-danger"></i>
+            <p class="text-body-secondary mt-2 mb-0">Failed to discover devices: ${error.message}</p>
+          </div>
+        `;
+        showToast('Discovery failed', 'danger');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-search me-1"></i> Discover';
+      }
+    }
+
+    function renderDevices(devices) {
+      const deviceList = document.getElementById('deviceList');
+
+      if (devices.length === 0) {
+        deviceList.innerHTML = `
+          <div class="text-center py-5">
+            <i class="bi bi-plug fs-1 text-body-secondary"></i>
+            <p class="text-body-secondary mt-2 mb-0">No Key Lights found on the network.</p>
+            <p class="text-body-secondary small">Make sure they are powered on and connected.</p>
+          </div>
+        `;
+        return;
+      }
+
+      deviceList.innerHTML = `
+        <div class="list-group list-group-flush">
+          ${devices.map((device, index) => `
+            <div class="list-group-item device-card d-flex justify-content-between align-items-center py-3">
+              <div class="d-flex align-items-center">
+                <div class="me-3">
+                  <i class="bi bi-lightbulb-fill fs-3 text-warning"></i>
+                </div>
+                <div>
+                  <div class="fw-semibold">
+                    ${device.name}
+                    <span class="badge bg-success-subtle text-success ms-2">
+                      <span class="status-indicator status-online me-1"></span>
+                      Online
+                    </span>
+                  </div>
+                  <div class="small text-body-secondary">
+                    <span class="me-2"><i class="bi bi-box me-1"></i>${device.model}</span>
+                    <span class="me-2"><i class="bi bi-ethernet me-1"></i>${device.addresses[0] || device.host}:${device.port}</span>
+                    ${device.mac ? `<span><i class="bi bi-hash me-1"></i>${device.mac}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+              <div class="btn-group">
+                <button class="btn btn-outline-secondary btn-sm" onclick="identifyDevice(${index})" title="Identify">
+                  <i class="bi bi-stars"></i>
+                </button>
+                <button class="btn btn-outline-primary btn-sm" onclick="showDeviceDetails(${index})" title="Details">
+                  <i class="bi bi-gear"></i>
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    async function identifyDevice(index) {
+      const device = discoveredDevices[index];
+      try {
+        const result = await homebridge.request('/device/identify', {
+          host: device.addresses[0] || device.host,
+          port: device.port,
+        });
+        if (result.success) {
+          showToast(`Identifying ${device.name}...`, 'success');
+        } else {
+          showToast(`Failed to identify: ${result.error}`, 'danger');
+        }
+      } catch (error) {
+        showToast(`Error: ${error.message}`, 'danger');
+      }
+    }
+
+    async function showDeviceDetails(index) {
+      const device = discoveredDevices[index];
+      const modalDeviceName = document.getElementById('modalDeviceName');
+      const modalContent = document.getElementById('modalContent');
+
+      modalDeviceName.textContent = device.name;
+      modalContent.innerHTML = `
+        <div class="text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="text-body-secondary mt-2 mb-0">Loading device information...</p>
+        </div>
+      `;
+      deviceModal.show();
+
+      try {
+        const host = device.addresses[0] || device.host;
+        const [infoResult, settingsResult] = await Promise.all([
+          homebridge.request('/device/info', { host, port: device.port }),
+          homebridge.request('/device/settings', { host, port: device.port }),
+        ]);
+
+        if (!infoResult.success) {
+          throw new Error(infoResult.error);
+        }
+
+        const info = infoResult.data;
+        const settings = settingsResult.success ? settingsResult.data : null;
+        const lights = settings?.lights?.lights?.[0] || {};
+
+        modalContent.innerHTML = `
+          <!-- Device Info Section -->
+          <div class="mb-4">
+            <h6 class="text-body-secondary mb-3">
+              <i class="bi bi-info-circle me-2"></i>Device Information
+            </h6>
+            <div class="row g-3">
+              <div class="col-6 col-md-4">
+                <div class="bg-body-tertiary rounded p-3">
+                  <div class="info-label text-body-secondary">Product</div>
+                  <div class="fw-medium">${info.productName || 'Unknown'}</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-4">
+                <div class="bg-body-tertiary rounded p-3">
+                  <div class="info-label text-body-secondary">Serial Number</div>
+                  <div class="fw-medium font-monospace small">${info.serialNumber || 'Unknown'}</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-4">
+                <div class="bg-body-tertiary rounded p-3">
+                  <div class="info-label text-body-secondary">Firmware</div>
+                  <div class="fw-medium">${info.firmwareVersion || 'Unknown'}</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-4">
+                <div class="bg-body-tertiary rounded p-3">
+                  <div class="info-label text-body-secondary">Display Name</div>
+                  <div class="fw-medium">${info.displayName || device.name}</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-4">
+                <div class="bg-body-tertiary rounded p-3">
+                  <div class="info-label text-body-secondary">IP Address</div>
+                  <div class="fw-medium font-monospace small">${host}</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-4">
+                <div class="bg-body-tertiary rounded p-3">
+                  <div class="info-label text-body-secondary">Port</div>
+                  <div class="fw-medium">${device.port}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          ${settings ? `
+            <!-- Current State Section -->
+            <div class="mb-4">
+              <h6 class="text-body-secondary mb-3">
+                <i class="bi bi-sliders me-2"></i>Current State
+              </h6>
+              <div class="row g-3">
+                <div class="col-4">
+                  <div class="bg-body-tertiary rounded p-3 text-center">
+                    <div class="info-label text-body-secondary">Power</div>
+                    <div class="fs-4 mt-1">
+                      ${lights.on ? '<i class="bi bi-circle-fill text-success"></i>' : '<i class="bi bi-circle text-secondary"></i>'}
+                    </div>
+                    <div class="small">${lights.on ? 'On' : 'Off'}</div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="bg-body-tertiary rounded p-3 text-center">
+                    <div class="info-label text-body-secondary">Brightness</div>
+                    <div class="fs-4 mt-1 fw-bold">${lights.brightness || 0}%</div>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="bg-body-tertiary rounded p-3 text-center">
+                    <div class="info-label text-body-secondary">Temperature</div>
+                    <div class="fs-4 mt-1 fw-bold">${lights.temperature ? Math.round(1000000 / lights.temperature) : 'N/A'}</div>
+                    <div class="small">Kelvin</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Test Connection Section -->
+          <div class="border-top pt-3">
+            <h6 class="text-body-secondary mb-3">
+              <i class="bi bi-diagram-3 me-2"></i>Connection Test
+            </h6>
+            <div class="d-flex align-items-center">
+              <button class="btn btn-outline-secondary" onclick="testConnection('${host}', ${device.port})">
+                <i class="bi bi-plug me-1"></i> Test Connection
+              </button>
+              <span id="connectionResult" class="ms-3"></span>
+            </div>
+          </div>
+        `;
+      } catch (error) {
+        modalContent.innerHTML = `
+          <div class="text-center py-4">
+            <i class="bi bi-exclamation-triangle fs-1 text-danger"></i>
+            <p class="text-body-secondary mt-2 mb-0">Failed to load device details: ${error.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    async function testConnection(host, port) {
+      const resultSpan = document.getElementById('connectionResult');
+      resultSpan.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Testing...';
+
+      try {
+        const result = await homebridge.request('/device/test', { host, port });
+        if (result.success) {
+          resultSpan.innerHTML = `<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Connected (${result.latency}ms)</span>`;
+        } else {
+          resultSpan.innerHTML = `<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>${result.error}</span>`;
+        }
+      } catch (error) {
+        resultSpan.innerHTML = `<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>${error.message}</span>`;
+      }
+    }
+
+    function showToast(message, type) {
+      const toastEl = document.getElementById('toast');
+      const toastIcon = document.getElementById('toastIcon');
+      const toastTitle = document.getElementById('toastTitle');
+      const toastMessage = document.getElementById('toastMessage');
+
+      // Set icon and title based on type
+      if (type === 'success') {
+        toastIcon.className = 'bi bi-check-circle-fill text-success me-2';
+        toastTitle.textContent = 'Success';
+      } else if (type === 'danger') {
+        toastIcon.className = 'bi bi-exclamation-triangle-fill text-danger me-2';
+        toastTitle.textContent = 'Error';
+      } else {
+        toastIcon.className = 'bi bi-info-circle-fill text-primary me-2';
+        toastTitle.textContent = 'Info';
+      }
+
+      toastMessage.textContent = message;
+      toast.show();
+    }
+  </script>
+</body>
+</html>
