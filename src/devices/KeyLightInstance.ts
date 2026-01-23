@@ -1,7 +1,7 @@
 import { CharacteristicValue, Logger } from 'homebridge';
 import axios from 'axios';
 
-import { API_PATHS, DEFAULT_POLLING_RATE_MS } from '../config/constants.js';
+import { API_PATHS, DEFAULT_POLLING_RATE_MS, clampColorTemperature } from '../config/constants.js';
 import {
   KeyLight,
   KeyLightSettings,
@@ -168,7 +168,12 @@ export class KeyLightInstance implements KeyLight {
    * Get a light property value
    */
   public getProperty(property: LightProperty): number {
-    return this.options?.lights[0][property] ?? 0;
+    const value = this.options?.lights[0][property] ?? 0;
+    // Clamp temperature to valid HomeKit range (device may return out-of-range values)
+    if (property === 'temperature') {
+      return clampColorTemperature(value);
+    }
+    return value;
   }
 
   /**
@@ -189,7 +194,7 @@ export class KeyLightInstance implements KeyLight {
             this.propertyChangedCallback('on', newLight.on);
           }
           if (oldLight.temperature !== newLight.temperature) {
-            this.propertyChangedCallback('temperature', newLight.temperature);
+            this.propertyChangedCallback('temperature', clampColorTemperature(newLight.temperature));
           }
           if (oldLight.brightness !== newLight.brightness) {
             this.propertyChangedCallback('brightness', newLight.brightness);

@@ -8,15 +8,8 @@ import {
 
 import { KeyLightsPlatform } from '../platform/KeyLightsPlatform.js';
 import { KeyLightInstance } from '../devices/KeyLightInstance.js';
-import { COLOR_TEMPERATURE } from '../config/constants.js';
+import { COLOR_TEMPERATURE, clampColorTemperature } from '../config/constants.js';
 import { KeyLight, LightProperty } from '../types/index.js';
-
-/**
- * Clamp a value to the HomeKit color temperature range
- */
-function clampColorTemperature(value: number): number {
-  return Math.max(COLOR_TEMPERATURE.MIN_MIREK, Math.min(COLOR_TEMPERATURE.MAX_MIREK, value));
-}
 
 /**
  * Platform Accessory for the Key Light.

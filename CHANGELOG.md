@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.0.2] - 2026-01-23
+
+### Fixed
+
+- Color temperature values outside HomeKit range (140 mirek) now clamped to valid range (143-344)
+
+### Changed
+
+- Removed magic numbers, replaced with named constants in `constants.ts`
+- Added `clampColorTemperature` utility function for consistent temperature clamping
+- Added `DEFAULT_DEVICE_SETTINGS` constants for device configuration defaults
+- Added `ARP_TIMEOUT_MS` and `MAX_IPV4_OCTET` constants
+
+### Added
+
+- 12 new unit tests for constants and clampColorTemperature function
+
+---
+
 ## [1.0.1] - 2026-01-23
 
 ### Added

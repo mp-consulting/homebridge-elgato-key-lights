@@ -10,7 +10,7 @@ import {
 import { Bonjour, Service as BonjourService, Browser } from 'bonjour-service';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from '../config/settings.js';
-import { BONJOUR_SERVICE_TYPE, KELVIN_TO_MIREK_FACTOR } from '../config/constants.js';
+import { BONJOUR_SERVICE_TYPE, KELVIN_TO_MIREK_FACTOR, DEFAULT_DEVICE_SETTINGS } from '../config/constants.js';
 import { KeyLightsAccessory } from '../accessories/KeyLightsAccessory.js';
 import { KeyLightInstance } from '../devices/KeyLightInstance.js';
 import { DeviceCatalog } from './DeviceCatalog.js';
@@ -153,15 +153,25 @@ export class KeyLightsPlatform implements DynamicPlatformPlugin {
     // Convert Kelvin to mirek if powerOnTemperature is provided in Kelvin
     const powerOnTemperature = this.config.powerOnTemperature
       ? Math.round(KELVIN_TO_MIREK_FACTOR / this.config.powerOnTemperature)
-      : currentSettings?.powerOnTemperature ?? 213;
+      : currentSettings?.powerOnTemperature ?? DEFAULT_DEVICE_SETTINGS.POWER_ON_TEMPERATURE;
 
     return {
-      powerOnBehavior: this.config.powerOnBehavior ?? currentSettings?.powerOnBehavior ?? 1,
-      powerOnBrightness: this.config.powerOnBrightness ?? currentSettings?.powerOnBrightness ?? 20,
+      powerOnBehavior: this.config.powerOnBehavior
+        ?? currentSettings?.powerOnBehavior
+        ?? DEFAULT_DEVICE_SETTINGS.POWER_ON_BEHAVIOR,
+      powerOnBrightness: this.config.powerOnBrightness
+        ?? currentSettings?.powerOnBrightness
+        ?? DEFAULT_DEVICE_SETTINGS.POWER_ON_BRIGHTNESS,
       powerOnTemperature,
-      switchOnDurationMs: this.config.switchOnDurationMs ?? currentSettings?.switchOnDurationMs ?? 100,
-      switchOffDurationMs: this.config.switchOffDurationMs ?? currentSettings?.switchOffDurationMs ?? 300,
-      colorChangeDurationMs: this.config.colorChangeDurationMs ?? currentSettings?.colorChangeDurationMs ?? 100,
+      switchOnDurationMs: this.config.switchOnDurationMs
+        ?? currentSettings?.switchOnDurationMs
+        ?? DEFAULT_DEVICE_SETTINGS.SWITCH_ON_DURATION_MS,
+      switchOffDurationMs: this.config.switchOffDurationMs
+        ?? currentSettings?.switchOffDurationMs
+        ?? DEFAULT_DEVICE_SETTINGS.SWITCH_OFF_DURATION_MS,
+      colorChangeDurationMs: this.config.colorChangeDurationMs
+        ?? currentSettings?.colorChangeDurationMs
+        ?? DEFAULT_DEVICE_SETTINGS.COLOR_CHANGE_DURATION_MS,
     };
   }
 

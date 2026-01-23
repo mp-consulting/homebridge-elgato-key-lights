@@ -1,6 +1,8 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
+import { ARP_TIMEOUT_MS, MAX_IPV4_OCTET } from '../config/constants.js';
+
 const execAsync = promisify(exec);
 
 /**
@@ -14,7 +16,7 @@ function isIPv4Address(str: string): boolean {
   const parts = str.split('.');
   return parts.every(part => {
     const num = parseInt(part, 10);
-    return num >= 0 && num <= 255;
+    return num >= 0 && num <= MAX_IPV4_OCTET;
   });
 }
 
@@ -85,7 +87,7 @@ async function resolveFromArp(mac: string): Promise<string | null> {
 
   for (const cmd of commands) {
     try {
-      const { stdout } = await execAsync(cmd, { timeout: 5000 });
+      const { stdout } = await execAsync(cmd, { timeout: ARP_TIMEOUT_MS });
       const ip = parseArpOutput(stdout, normalizedMac);
       if (ip) {
         return ip;
