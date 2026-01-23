@@ -1,6 +1,7 @@
 {
   "watch": [
-    "src"
+    "src",
+    "homebridge-ui"
   ],
   "ext": "ts",
   "ignore": [],
