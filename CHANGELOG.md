@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3] - 2026-01-23
+
+### Added
+
+- ConfiguredName characteristic for better device name display in HomeKit
+
+---
+
 ## [1.0.2] - 2026-01-23
 
 ### Fixed

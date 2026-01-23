@@ -39,6 +39,10 @@ export class KeyLightsAccessory {
     // Set the service name, this is what is displayed as the default name on the Home app
     this.service.setCharacteristic(this.platform.Characteristic.Name, this.light.displayName);
 
+    // Set ConfiguredName for better HomeKit display
+    this.service.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
+    this.service.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.light.displayName);
+
     // Register handlers for the On/Off Characteristic
     this.service.getCharacteristic(this.platform.Characteristic.On)
       .on('set', this.setOn.bind(this))
