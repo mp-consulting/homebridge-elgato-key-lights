@@ -1,78 +1,160 @@
+# Homebridge Elgato Key Lights
 
-# Homebridge Key Lights
+A [Homebridge](https://homebridge.io) plugin for controlling [Elgato Key Light](https://www.elgato.com/en/key-light) and [Key Light Air](https://www.elgato.com/en/key-light-air) devices via HomeKit.
 
-This is yet another Homebridge plugin for the Elgato Key Light, Key Light Air and Ring Light. It allows you to control your Elgato lights with HomeKit while avoiding some of the issues other plugins have.
-
-[![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
+[![npm](https://img.shields.io/npm/v/homebridge-elgato-key-lights)](https://www.npmjs.com/package/homebridge-elgato-key-lights)
+[![npm](https://img.shields.io/npm/dt/homebridge-elgato-key-lights)](https://www.npmjs.com/package/homebridge-elgato-key-lights)
+[![License](https://img.shields.io/npm/l/homebridge-elgato-key-lights)](LICENSE)
 
 ## Features
 
-- Switch your Key Lights on and off, set brightness and colour temperature
-- State of the lights is regularly polled so HomeKit always has the correct data
-- Correct minimum and maximum values configured for colour temperature 
-- All settings configurable via config file, even those not available in the Elgato Control App 
+- Automatic discovery of Elgato Key Lights on your network via mDNS/Bonjour
+- Control power, brightness, and color temperature from HomeKit
+- Real-time state synchronization with polling
+- Configure power-on behavior and default settings
+- Custom UI for device management in Homebridge Config UI X
+
+## Requirements
+
+- Node.js v20 or later
+- Homebridge v1.8.0 or later
 
 ## Installation
-You can install the plugin either using the Homebridge Web UI or using the command line:
 
-    npm install -g homebridge-keylights
+### Via Homebridge Config UI X (Recommended)
 
-To use the plugin, it must be configured. This is a minimal working configuration:
+1. Open Homebridge Config UI X
+2. Navigate to the Plugins tab
+3. Search for `homebridge-elgato-key-lights`
+4. Click Install
 
+### Via npm
+
+```bash
+npm install -g homebridge-elgato-key-lights
+```
+
+## Configuration
+
+### Basic Configuration
+
+Add the platform to your Homebridge `config.json`:
+
+```json
+{
+  "platforms": [
     {
-    "bridge": {
-        ....
-    },
-    "accessories": [],
-    "platforms": [
-        {
-            "platform": "ElgatoKeyLights",
-            "name": "Elgato Key Light",
-        }
-      ]
+      "platform": "ElgatoKeyLights",
+      "name": "Elgato Key Lights"
     }
+  ]
+}
+```
 
-## Settings
+That's it! The plugin will automatically discover all Elgato Key Lights on your network.
 
-Further settings are available to configure. This is a complete configuration:
+### Advanced Configuration
 
+```json
+{
+  "platforms": [
     {
-    "bridge": {
-        ....
-    },
-    "accessories": [],
-    "platforms": [
-        {
-            "name": "Elgato Key Lights",
-            "pollingRate": 1000,
-            "powerOnBehavior": 1,
-            "powerOnBrightness": 20,
-            "powerOnTemperature": 4695,
-            "switchOnDurationMs": 100,
-            "switchOffDurationMs": 300,
-            "colorChangeDurationMs": 100,
-            "useIP": false,
-            "platform": "ElgatoKeyLights"
-        }
-      ]
+      "platform": "ElgatoKeyLights",
+      "name": "Elgato Key Lights",
+      "pollingRate": 1000,
+      "powerOnBehavior": 1,
+      "powerOnBrightness": 20,
+      "powerOnTemperature": 4695,
+      "switchOnDurationMs": 100,
+      "switchOffDurationMs": 300,
+      "colorChangeDurationMs": 100,
+      "useIP": false
     }
+  ]
+}
+```
 
-- `name` is the name of the plugin to appear in the log file. Defaults to `Elgato Key Lights`.
-- `pollingRate` is the rate at which to poll the lights for changes in milliseconds. Defaults to `1000`.
-- `powerOnBehavior` is the behaviour when powering the lights on. Defaults to `1` which means restore the last settings used. `2` means restoring the default values configured below.
-- `powerOnBrightness` is the default brightness value when powering on in percent. Defaults to `20`. Range is `0` to `100`.
-- `powerOnTemperature` is the default colour temperature when powering on in Kelvin. Defaults to `4695`. Range is `2900` to `7000`.
-- `switchOnDurationMs` is the duration of the switch on sequence in milliseconds. Defaults to `100`.
-- `switchOffDurationMs` is the duration of the switch off sequence in milliseconds. Defaults to `300`.
-- `colorChangeDurationMs` is the duration of a colour temperature change in milliseconds. Defaults to `100`.
-- `useIP` enables the usage of IP addresses instead of hostnames to connect to the lights. Defaults to `false`. Should only be turn on if you experience connection issues.
+### Configuration Options
 
-All settings can conveniently configured using the Homebridge Web UI.
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `name` | string | `"Elgato Key Lights"` | Plugin name displayed in Homebridge logs |
+| `pollingRate` | integer | `1000` | How often to poll light status (milliseconds) |
+| `powerOnBehavior` | integer | `1` | `1` = Restore last settings, `2` = Restore defaults |
+| `powerOnBrightness` | integer | `20` | Default brightness when powered on (0-100%) |
+| `powerOnTemperature` | integer | `4695` | Default color temperature (2900-7000K) |
+| `switchOnDurationMs` | integer | `100` | Fade-in duration when turning on (ms) |
+| `switchOffDurationMs` | integer | `300` | Fade-out duration when turning off (ms) |
+| `colorChangeDurationMs` | integer | `100` | Transition duration for color changes (ms) |
+| `useIP` | boolean | `false` | Use IP address instead of hostname for connections |
 
-## Known issues
+## Supported Devices
 
-### Unable to register accessory
+- Elgato Key Light
+- Elgato Key Light Air
+- Elgato Key Light Mini
+- Elgato Ring Light
 
-Some users [have had an issue](https://github.com/derjayjay/homebridge-keylights/issues/1) where Homebridge was unable to connect to the lights after setting the plugin up. This seems to be a common issue where the lights become unresponsive after not being polled for some time, and also happens with the official Elgato app.
+Any device advertising the `_elg._tcp` mDNS service should work.
 
-As a fix, try power cycling the lights and then restart Homebridge. Usually, the lights are discovered and since the plugin polls the status of the lights regularly, they keep working. In case you are still unable to connect to the lights, try the `useIP` option described in the settings.
+## Troubleshooting
+
+### Lights not discovered
+
+1. Ensure your lights are on the same network as your Homebridge server
+2. Check that mDNS/Bonjour traffic is not blocked by your router or firewall
+3. Try enabling the `useIP` option if you have DNS resolution issues
+
+### Connection issues
+
+If you experience intermittent connection problems:
+
+1. Try setting `useIP: true` in your configuration
+2. Assign static IP addresses to your lights via your router's DHCP settings
+3. Reduce the `pollingRate` if your network is congested
+
+### Lights not responding
+
+1. Restart the Elgato Control Center app on your computer
+2. Power cycle your Key Light
+3. Check the Homebridge logs for error messages
+
+## Development
+
+```bash
+# Clone the repository
+git clone https://github.com/mp-consulting/homebridge-elgato-key-lights.git
+cd homebridge-elgato-key-lights
+
+# Install dependencies
+npm install
+
+# Build
+npm run build
+
+# Watch mode (for development)
+npm run watch
+
+# Lint
+npm run lint
+```
+
+## Project Structure
+
+```
+src/
+├── index.ts                         # Entry point
+├── types/                           # TypeScript interfaces
+├── config/                          # Constants and settings
+├── platform/                        # Platform and device catalog
+├── accessories/                     # HomeKit accessory handlers
+└── devices/                         # Device API clients
+```
+
+## License
+
+[MIT](LICENSE)
+
+## Credits
+
+Originally forked from [homebridge-keylights](https://github.com/derjayjay/homebridge-keylights) by derjayjay.

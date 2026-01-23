@@ -78,6 +78,74 @@
         "type": "boolean",
         "required": false,
         "description": "By default, the hostname of the light is used for the connection. If this causes issues in your environment, you can enable this option to use the IP address instead."
+      },
+      "devices": {
+        "title": "Devices",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Name",
+              "type": "string",
+              "required": true
+            },
+            "mac": {
+              "title": "MAC Address",
+              "type": "string",
+              "required": true
+            },
+            "host": {
+              "title": "Hostname",
+              "type": "string"
+            },
+            "ip": {
+              "title": "IP Address",
+              "type": "string"
+            },
+            "port": {
+              "title": "Port",
+              "type": "integer",
+              "default": 9123
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            },
+            "displayName": {
+              "title": "Display Name",
+              "type": "string",
+              "description": "Custom name for HomeKit"
+            },
+            "powerOnBehavior": {
+              "title": "Power On Behaviour",
+              "type": "number",
+              "oneOf": [
+                { "title": "Use global setting", "enum": [0] },
+                { "title": "Restore last settings used", "enum": [1] },
+                { "title": "Restore default settings", "enum": [2] }
+              ],
+              "default": 0
+            },
+            "powerOnBrightness": {
+              "title": "Default Brightness (%)",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "powerOnTemperature": {
+              "title": "Default Temperature (K)",
+              "type": "integer",
+              "minimum": 2900,
+              "maximum": 7000
+            },
+            "enabled": {
+              "title": "Enabled",
+              "type": "boolean",
+              "default": true
+            }
+          }
+        }
       }
     }
   },

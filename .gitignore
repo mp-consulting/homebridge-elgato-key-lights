@@ -122,3 +122,5 @@ dist
 .yarn/build-state.yml
 .pnp.*
 .DS_Store
+/_bmad*
+.claude/commands/bmad/*

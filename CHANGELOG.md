@@ -1,45 +1,80 @@
-## Changelog
+# Changelog
 
-#### [v1.2.4](https://github.com/derjayjay/homebridge-keylights/compare/v1.2.3...v1.2.4)
+## [2.0.0] - 2026-01-22
+
+### Changed
+
+- **Breaking:** Requires Node.js v20 or later
+- **Breaking:** Requires Homebridge v1.8.0 or later
+- Complete codebase refactor with improved architecture
+- Reorganized project structure into logical modules:
+  - `types/` - All TypeScript interfaces and type definitions
+  - `config/` - Constants and plugin settings
+  - `platform/` - Platform plugin and device catalog
+  - `accessories/` - HomeKit accessory handlers
+  - `devices/` - Device API communication
+- Converted from unsafe declaration merging to proper class implementation
+- Migrated from nested Promise chains to async/await
+- Parallel device initialization for faster startup
+- Centralized constants for magic numbers and API paths
+- Improved error handling with detailed error messages
+- Fixed filename typo (`keyLightsPlatfom.ts` → `keyLightsPlatform.ts`)
+
+### Added
+
+- `DeviceCatalog` class for centralized device lifecycle management
+- Device state tracking (discovered, initializing, online, offline, error)
+- Proper TypeScript types for all light properties
+- `LightProperty` type for type-safe property access
+- Shared `PropertyChangedCallback` type
+
+### Fixed
+
+- Error messages now include actual error details instead of being swallowed
+- `manufacturer` getter now handles product names without spaces correctly
+
+---
+
+## [1.2.4]
 
 Bumped some package versions
 
-#### [v1.2.3](https://github.com/derjayjay/homebridge-keylights/compare/v1.2.3...v1.2.2)
+## [1.2.3]
 
 Bumped some package versions
 
-#### [v1.2.2](https://github.com/derjayjay/homebridge-keylights/compare/v1.2.1...v1.2.2)
+## [1.2.2]
 
 Bumped some package versions
 
-#### [v1.2.1](https://github.com/derjayjay/homebridge-keylights/compare/v1.2.0...v1.2.1)
+## [1.2.1]
 
 Added more keywords
 
-#### [v1.2.0](https://github.com/derjayjay/homebridge-keylights/compare/v1.1.0...v1.2.0)
+## [1.2.0]
 
-Fixed a bug where the mDNS referrer was used instead of the hostname. Added an option to switch between using the hosting and the IP address of the lights.
+Fixed a bug where the mDNS referrer was used instead of the hostname. Added an option to switch between using the hostname and the IP address of the lights.
 
-#### [v1.1.0](https://github.com/derjayjay/homebridge-keylights/compare/v1.0.2...v1.1.0)
+## [1.1.0]
 
 Plugin is now verified by Homebridge. Optional settings no longer have a default value (making them non-optional), but use a placeholder.
 
-#### [v1.0.2](https://github.com/derjayjay/homebridge-keylights/compare/v1.0.1...v1.0.2)
+## [1.0.2]
 
 Lowered required Node version to maintenance LTS (i.e. Node.js v10)
 
-#### [v1.0.1](https://github.com/derjayjay/homebridge-keylights/compare/v1.0.0...v1.0.1)
+## [1.0.1]
 
 Added CHANGELOG.md
 
-### [v1.0.0](https://github.com/derjayjay/homebridge-keylights/compare/v0.1.1...v1.0.0)
+## [1.0.0]
 
 Implemented changing of device settings
 
-#### [v0.1.1](https://github.com/derjayjay/homebridge-keylights/compare/v0.1.0...v0.1.1)
+## [0.1.1]
 
 Added README.md with basic configuration
 
-#### [v0.1.0](https://github.com/derjayjay/homebridge-keylights/compare/99da1a3...v0.1.0)
+## [0.1.0]
 
 First implementation
