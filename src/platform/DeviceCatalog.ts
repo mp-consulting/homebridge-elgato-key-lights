@@ -1,11 +1,8 @@
 import { Logger } from 'homebridge';
-import { KeyLightInstance, KeyLight } from './keyLight.js';
-import { KeyLightsAccessory } from './keyLightsAccessory.js';
 
-/**
- * Represents the current state of a device in the catalog
- */
-export type DeviceState = 'discovered' | 'initializing' | 'online' | 'offline' | 'error';
+import { KeyLightInstance } from '../devices/KeyLightInstance.js';
+import { KeyLightsAccessory } from '../accessories/KeyLightsAccessory.js';
+import { KeyLight, DeviceState } from '../types/index.js';
 
 /**
  * Entry in the device catalog containing all device-related objects
