@@ -27,6 +27,15 @@
 - Proper TypeScript types for all light properties
 - `LightProperty` type for type-safe property access
 - Shared `PropertyChangedCallback` type
+- Unit testing infrastructure with Vitest
+- Test coverage for `KeyLightInstance` (98.6%) and constants (100%)
+- Mock helpers for Homebridge API and axios
+- Test data factories for KeyLight fixtures
+- Modernized Homebridge UI with device management
+
+### Changed
+
+- Package name changed to `@mp-consulting/homebridge-elgato-key-lights` (scoped)
 
 ### Fixed
 
