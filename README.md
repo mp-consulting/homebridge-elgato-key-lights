@@ -2,9 +2,9 @@
 
 A [Homebridge](https://homebridge.io) plugin for controlling [Elgato Key Light](https://www.elgato.com/en/key-light) and [Key Light Air](https://www.elgato.com/en/key-light-air) devices via HomeKit.
 
-[![npm](https://img.shields.io/npm/v/homebridge-elgato-key-lights)](https://www.npmjs.com/package/homebridge-elgato-key-lights)
-[![npm](https://img.shields.io/npm/dt/homebridge-elgato-key-lights)](https://www.npmjs.com/package/homebridge-elgato-key-lights)
-[![License](https://img.shields.io/npm/l/homebridge-elgato-key-lights)](LICENSE)
+[![npm](https://img.shields.io/npm/v/@mp-consulting/homebridge-elgato-key-lights)](https://www.npmjs.com/package/@mp-consulting/homebridge-elgato-key-lights)
+[![npm](https://img.shields.io/npm/dt/@mp-consulting/homebridge-elgato-key-lights)](https://www.npmjs.com/package/@mp-consulting/homebridge-elgato-key-lights)
+[![License](https://img.shields.io/npm/l/@mp-consulting/homebridge-elgato-key-lights)](LICENSE)
 
 ## Features
 
@@ -25,13 +25,13 @@ A [Homebridge](https://homebridge.io) plugin for controlling [Elgato Key Light](
 
 1. Open Homebridge Config UI X
 2. Navigate to the Plugins tab
-3. Search for `homebridge-elgato-key-lights`
+3. Search for `@mp-consulting/homebridge-elgato-key-lights`
 4. Click Install
 
 ### Via npm
 
 ```bash
-npm install -g homebridge-elgato-key-lights
+npm install -g @mp-consulting/homebridge-elgato-key-lights
 ```
 
 ## Configuration
