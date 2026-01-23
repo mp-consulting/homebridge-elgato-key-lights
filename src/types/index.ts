@@ -17,6 +17,8 @@ export interface KeyLight {
   port: number;
   name: string;
   mac: string;
+  /** IP addresses discovered via mDNS (used as fallback when hostname resolution fails) */
+  addresses?: string[];
 }
 
 /** Device power-on and transition settings */

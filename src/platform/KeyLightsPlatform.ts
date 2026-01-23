@@ -99,6 +99,7 @@ export class KeyLightsPlatform implements DynamicPlatformPlugin {
       port: remoteService.port,
       name: remoteService.name,
       mac: (remoteService.txt?.id as string) ?? '',
+      addresses: remoteService.addresses,
     };
 
     if (this.catalog.has(light.mac)) {
@@ -118,6 +119,10 @@ export class KeyLightsPlatform implements DynamicPlatformPlugin {
       .then((instance) => {
         this.log.debug('Created device instance for', instance.name);
         this.catalog.registerInstance(light.mac, instance);
+        // Cache the resolved IP for future use
+        if (instance.hostname !== light.hostname) {
+          this.catalog.setResolvedIp(light.mac, instance.hostname);
+        }
         this.configureDevice(instance);
       })
       .catch((error: unknown) => {

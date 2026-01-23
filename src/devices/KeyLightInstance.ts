@@ -10,6 +10,7 @@ import {
   LightProperty,
   PropertyChangedCallback,
 } from '../types/index.js';
+import { resolveHostname } from '../utils/dns-resolver.js';
 
 /**
  * Represents an initialized Key Light device instance.
@@ -48,6 +49,13 @@ export class KeyLightInstance implements KeyLight {
     pollingRate?: number,
   ): Promise<KeyLightInstance> {
     const instance = new KeyLightInstance(data, log, pollingRate ?? DEFAULT_POLLING_RATE_MS);
+
+    // Try to resolve the hostname using multiple methods (DNS, ARP, fallback addresses)
+    const resolvedHostname = await resolveHostname(data.hostname, data.mac, data.addresses);
+    if (resolvedHostname !== data.hostname) {
+      log.info(`Resolved ${data.hostname} to ${resolvedHostname} for ${data.name}`);
+      instance.hostname = resolvedHostname;
+    }
 
     try {
       const [infoResponse, optionsResponse, settingsResponse] = await Promise.all([

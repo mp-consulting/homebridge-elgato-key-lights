@@ -20,6 +20,8 @@ export interface DeviceCatalogEntry {
   discoveredAt: Date;
   /** Timestamp of last successful communication */
   lastSeen: Date;
+  /** Resolved IP address (cached for reuse when mDNS resolution fails) */
+  resolvedIp?: string;
 }
 
 /**
@@ -121,6 +123,11 @@ export class DeviceCatalog {
   public updateConnectionData(mac: string, device: KeyLight): void {
     const entry = this.devices.get(mac);
     if (entry) {
+      // Preserve resolved IP if we have one and new hostname is .local
+      if (entry.resolvedIp && device.hostname.endsWith('.local')) {
+        device.hostname = entry.resolvedIp;
+        this.log.debug(`[Catalog] Using cached IP ${entry.resolvedIp} for ${device.name}`);
+      }
       entry.device = device;
       entry.lastSeen = new Date();
       if (entry.state === 'offline') {
@@ -128,6 +135,24 @@ export class DeviceCatalog {
       }
       this.log.debug(`[Catalog] Connection updated: ${device.name}`);
     }
+  }
+
+  /**
+   * Store the resolved IP address for a device
+   */
+  public setResolvedIp(mac: string, ip: string): void {
+    const entry = this.devices.get(mac);
+    if (entry) {
+      entry.resolvedIp = ip;
+      this.log.debug(`[Catalog] Cached resolved IP ${ip} for ${entry.device.name}`);
+    }
+  }
+
+  /**
+   * Get the resolved IP address for a device
+   */
+  public getResolvedIp(mac: string): string | undefined {
+    return this.devices.get(mac)?.resolvedIp;
   }
 
   /**

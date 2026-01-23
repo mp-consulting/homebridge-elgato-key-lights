@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.0.1] - 2026-01-23
+
+### Added
+
+- ARP-based IP resolution when mDNS `.local` hostname resolution fails
+- Cross-platform support for ARP lookup (macOS, Linux, Windows)
+- IP address caching in device catalog for faster reconnection
+- Resolved IP persisted to accessory context for use across restarts
+- New `dns-resolver` utility module for hostname resolution
+- Unit tests for DNS resolver (12 tests) and DeviceCatalog (11 tests)
+
+### Fixed
+
+- Device initialization failing with `getaddrinfo ENOTFOUND` for `.local` hostnames
+- Device reconnection now uses cached IP instead of re-resolving `.local` hostname
+
+---
+
 ## [2.0.0] - 2026-01-22
 
 ### Changed
