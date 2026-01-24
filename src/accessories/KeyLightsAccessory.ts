@@ -22,6 +22,7 @@ export class KeyLightsAccessory {
     private readonly platform: KeyLightsPlatform,
     private readonly accessory: PlatformAccessory,
     private readonly light: KeyLightInstance,
+    private readonly displayName: string = light.displayName,
   ) {
     // Set accessory information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
@@ -37,11 +38,11 @@ export class KeyLightsAccessory {
       ?? this.accessory.addService(this.platform.Service.Lightbulb);
 
     // Set the service name, this is what is displayed as the default name on the Home app
-    this.service.setCharacteristic(this.platform.Characteristic.Name, this.light.displayName);
+    this.service.setCharacteristic(this.platform.Characteristic.Name, this.displayName);
 
     // Set ConfiguredName for better HomeKit display
     this.service.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
-    this.service.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.light.displayName);
+    this.service.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.displayName);
 
     // Register handlers for the On/Off Characteristic
     this.service.getCharacteristic(this.platform.Characteristic.On)

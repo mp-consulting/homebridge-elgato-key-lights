@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.4] - 2026-01-24
+
+### Added
+
+- Per-device configuration via `devices` array in config.json
+- Custom device names can be set using MAC address or serial number as identifier
+- Device names from config are used for HomeKit display via ConfiguredName characteristic
+
+---
+
 ## [1.0.3] - 2026-01-23
 
 ### Added

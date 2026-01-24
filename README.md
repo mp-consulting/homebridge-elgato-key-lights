@@ -68,7 +68,17 @@ That's it! The plugin will automatically discover all Elgato Key Lights on your 
       "switchOnDurationMs": 100,
       "switchOffDurationMs": 300,
       "colorChangeDurationMs": 100,
-      "useIP": false
+      "useIP": false,
+      "devices": [
+        {
+          "mac": "AA:BB:CC:DD:EE:FF",
+          "displayName": "Desk Light"
+        },
+        {
+          "mac": "11:22:33:44:55:66",
+          "displayName": "Studio Key Light"
+        }
+      ]
     }
   ]
 }
@@ -87,6 +97,18 @@ That's it! The plugin will automatically discover all Elgato Key Lights on your 
 | `switchOffDurationMs` | integer | `300` | Fade-out duration when turning off (ms) |
 | `colorChangeDurationMs` | integer | `100` | Transition duration for color changes (ms) |
 | `useIP` | boolean | `false` | Use IP address instead of hostname for connections |
+| `devices` | array | `[]` | Per-device configuration (see below) |
+
+### Per-Device Configuration
+
+The `devices` array allows you to customize individual lights:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `mac` | string | MAC address of the device |
+| `displayName` | string | Custom display name for HomeKit |
+
+You can find the MAC address in Homebridge logs when a device is discovered.
 
 ## Supported Devices
 

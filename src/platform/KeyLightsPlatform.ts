@@ -14,7 +14,7 @@ import { BONJOUR_SERVICE_TYPE, KELVIN_TO_MIREK_FACTOR, DEFAULT_DEVICE_SETTINGS }
 import { KeyLightsAccessory } from '../accessories/KeyLightsAccessory.js';
 import { KeyLightInstance } from '../devices/KeyLightInstance.js';
 import { DeviceCatalog } from './DeviceCatalog.js';
-import { KeyLight, KeyLightSettings } from '../types/index.js';
+import { KeyLight, KeyLightSettings, DeviceConfig } from '../types/index.js';
 
 /**
  * Main platform plugin for Elgato Key Lights.
@@ -187,6 +187,10 @@ export class KeyLightsPlatform implements DynamicPlatformPlugin {
     const uuid = this.api.hap.uuid.generate(light.serialNumber);
     this.log.debug('UUID for', light.name, 'is', uuid);
 
+    // Look up custom device configuration
+    const deviceConfig = this.getDeviceConfig(light.mac);
+    const customName = deviceConfig?.displayName ?? light.displayName;
+
     // See if an accessory with the same uuid has already been registered and restored from
     // the cached devices we stored in the configureAccessory method above
     let accessory = this.accessories.find((acc) => acc.UUID === uuid);
@@ -201,27 +205,32 @@ export class KeyLightsPlatform implements DynamicPlatformPlugin {
 
     if (accessory) {
       // The accessory already exists
-      this.log.info('Restoring existing accessory from cache:', light.name, 'as', accessory.displayName);
+      this.log.info('Restoring existing accessory from cache:', light.name, 'as', customName);
+
+      // Update accessory display name if custom name is configured
+      if (deviceConfig?.displayName) {
+        accessory.displayName = customName;
+      }
 
       // Update the context with serializable data only
       accessory.context.device = deviceContext;
       this.api.updatePlatformAccessories([accessory]);
 
       // Create the accessory handler for the restored accessory
-      const handler = new KeyLightsAccessory(this, accessory, light);
+      const handler = new KeyLightsAccessory(this, accessory, light, customName);
       this.catalog.registerAccessory(light.mac, handler);
     } else {
       // The accessory does not yet exist, so we need to create it
-      this.log.info('Adding new accessory to Homebridge:', light.name, 'as', light.displayName);
+      this.log.info('Adding new accessory to Homebridge:', light.name, 'as', customName);
 
       // Create a new accessory
-      accessory = new this.api.platformAccessory(light.displayName, uuid);
+      accessory = new this.api.platformAccessory(customName, uuid);
 
       // Store serializable device data in the context
       accessory.context.device = deviceContext;
 
       // Create the accessory handler for the newly created accessory
-      const handler = new KeyLightsAccessory(this, accessory, light);
+      const handler = new KeyLightsAccessory(this, accessory, light, customName);
       this.catalog.registerAccessory(light.mac, handler);
 
       // Link the accessory to your platform
@@ -237,5 +246,18 @@ export class KeyLightsPlatform implements DynamicPlatformPlugin {
       return remoteService.addresses[0];
     }
     return remoteService.host;
+  }
+
+  /**
+   * Look up device configuration by MAC address
+   */
+  private getDeviceConfig(mac: string): DeviceConfig | undefined {
+    const devices = this.config.devices as DeviceConfig[] | undefined;
+    if (!devices || !Array.isArray(devices)) {
+      return undefined;
+    }
+    return devices.find((d) =>
+      d.mac.toLowerCase() === mac.toLowerCase(),
+    );
   }
 }

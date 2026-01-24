@@ -21,6 +21,14 @@ export interface KeyLight {
   addresses?: string[];
 }
 
+/** Per-device configuration from config.json */
+export interface DeviceConfig {
+  /** MAC address of the device */
+  mac: string;
+  /** Custom display name for HomeKit */
+  displayName?: string;
+}
+
 /** Device power-on and transition settings */
 export interface KeyLightSettings {
   powerOnBehavior: number;
