@@ -1,11 +1,19 @@
 # Changelog
 
+## [1.0.5] - 2026-01-24
+
+### Fixed
+
+- Device config now uses `mac` and `displayName` fields to match expected config format
+
+---
+
 ## [1.0.4] - 2026-01-24
 
 ### Added
 
 - Per-device configuration via `devices` array in config.json
-- Custom device names can be set using MAC address or serial number as identifier
+- Custom device names can be set using MAC address as identifier
 - Device names from config are used for HomeKit display via ConfiguredName characteristic
 
 ---
