@@ -1,8 +1,8 @@
-import { CharacteristicValue, Logger } from 'homebridge';
+import type { CharacteristicValue, Logger } from 'homebridge';
 import axios from 'axios';
 
 import { API_PATHS, DEFAULT_POLLING_RATE_MS, clampColorTemperature } from '../config/constants.js';
-import {
+import type {
   KeyLight,
   KeyLightSettings,
   KeyLightInfo,

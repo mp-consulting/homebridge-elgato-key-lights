@@ -1,4 +1,4 @@
-import {
+import type {
   Service,
   PlatformAccessory,
   CharacteristicValue,
@@ -6,10 +6,10 @@ import {
   CharacteristicGetCallback,
 } from 'homebridge';
 
-import { KeyLightsPlatform } from '../platform/KeyLightsPlatform.js';
-import { KeyLightInstance } from '../devices/KeyLightInstance.js';
+import type { KeyLightsPlatform } from '../platform/KeyLightsPlatform.js';
+import type { KeyLightInstance } from '../devices/KeyLightInstance.js';
 import { COLOR_TEMPERATURE, clampColorTemperature } from '../config/constants.js';
-import { KeyLight, LightProperty } from '../types/index.js';
+import type { KeyLight, LightProperty } from '../types/index.js';
 
 /**
  * Platform Accessory for the Key Light.
@@ -146,18 +146,18 @@ export class KeyLightsAccessory {
     );
 
     switch (property) {
-    case 'on':
-      this.service.updateCharacteristic(this.platform.Characteristic.On, value);
-      break;
-    case 'temperature':
-      this.service.updateCharacteristic(
-        this.platform.Characteristic.ColorTemperature,
-        clampColorTemperature(value),
-      );
-      break;
-    case 'brightness':
-      this.service.updateCharacteristic(this.platform.Characteristic.Brightness, value);
-      break;
+      case 'on':
+        this.service.updateCharacteristic(this.platform.Characteristic.On, value);
+        break;
+      case 'temperature':
+        this.service.updateCharacteristic(
+          this.platform.Characteristic.ColorTemperature,
+          clampColorTemperature(value),
+        );
+        break;
+      case 'brightness':
+        this.service.updateCharacteristic(this.platform.Characteristic.Brightness, value);
+        break;
     }
   }
 

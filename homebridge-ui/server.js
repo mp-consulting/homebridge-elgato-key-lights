@@ -93,7 +93,7 @@ class KeyLightsUiServer extends HomebridgePluginUiServer {
     // Fallback paths
     const projectRoot = join(__dirname, '..');
     possiblePaths.push(
-      join(projectRoot, '.homebridge.dev', 'config.json'),
+      join(projectRoot, 'test', 'hbConfig', 'config.json'),
       join(process.env.HOME || '', '.homebridge', 'config.json'),
       '/var/lib/homebridge/config.json',
     );

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DeviceCatalog } from '../../src/platform/DeviceCatalog.js';
-import { KeyLight } from '../../src/types/index.js';
-import { Logger } from 'homebridge';
+import type { KeyLight } from '../../src/types/index.js';
+import type { Logger } from 'homebridge';
 
 // Create a mock logger
 function createMockLogger(): Logger {

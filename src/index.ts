@@ -1,4 +1,4 @@
-import { API } from 'homebridge';
+import type { API } from 'homebridge';
 
 import { PLATFORM_NAME } from './config/settings.js';
 import { KeyLightsPlatform } from './platform/KeyLightsPlatform.js';

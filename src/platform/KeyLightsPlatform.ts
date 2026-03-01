@@ -1,4 +1,4 @@
-import {
+import type {
   API,
   DynamicPlatformPlugin,
   Logger,
@@ -7,14 +7,15 @@ import {
   Service,
   Characteristic,
 } from 'homebridge';
-import { Bonjour, Service as BonjourService, Browser } from 'bonjour-service';
+import type { Service as BonjourService, Browser } from 'bonjour-service';
+import { Bonjour } from 'bonjour-service';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from '../config/settings.js';
 import { BONJOUR_SERVICE_TYPE, KELVIN_TO_MIREK_FACTOR, DEFAULT_DEVICE_SETTINGS } from '../config/constants.js';
 import { KeyLightsAccessory } from '../accessories/KeyLightsAccessory.js';
 import { KeyLightInstance } from '../devices/KeyLightInstance.js';
 import { DeviceCatalog } from './DeviceCatalog.js';
-import { KeyLight, KeyLightSettings, DeviceConfig } from '../types/index.js';
+import type { KeyLight, KeyLightSettings, DeviceConfig } from '../types/index.js';
 
 /**
  * Main platform plugin for Elgato Key Lights.

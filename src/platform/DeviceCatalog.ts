@@ -1,8 +1,8 @@
-import { Logger } from 'homebridge';
+import type { Logger } from 'homebridge';
 
-import { KeyLightInstance } from '../devices/KeyLightInstance.js';
-import { KeyLightsAccessory } from '../accessories/KeyLightsAccessory.js';
-import { KeyLight, DeviceState } from '../types/index.js';
+import type { KeyLightInstance } from '../devices/KeyLightInstance.js';
+import type { KeyLightsAccessory } from '../accessories/KeyLightsAccessory.js';
+import type { KeyLight, DeviceState } from '../types/index.js';
 
 /**
  * Entry in the device catalog containing all device-related objects

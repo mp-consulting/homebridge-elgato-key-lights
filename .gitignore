@@ -1,8 +1,8 @@
 # Ignore compiled code
 dist
 
-# Ignore Homebridge chache
-.homebridge.dev
+# Ignore Homebridge cache
+test/hbConfig
 
 # ------------- Defaults ------------- #
 

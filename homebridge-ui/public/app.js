@@ -36,7 +36,9 @@ if (typeof homebridge !== 'undefined') {
 }
 
 async function onHomebridgeReady() {
-  if (initialized) return;
+  if (initialized) {
+    return;
+  }
   initialized = true;
 
   // Step 1: Load and display configured devices immediately
@@ -67,6 +69,7 @@ async function loadConfiguredDevices() {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
 function showListView() {
   document.getElementById('listView').classList.add('active');
   document.getElementById('settingsView').classList.remove('active');
@@ -74,6 +77,7 @@ function showListView() {
   renderDevices(discoveredDevices);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
 function showSettingsView(index) {
   currentDeviceIndex = index;
   document.getElementById('listView').classList.remove('active');
@@ -97,7 +101,7 @@ async function discoverDevices() {
 
     // Check for new devices not in config
     const newDevices = discovered.filter(d =>
-      !configuredDevices.some(c => c.mac === d.mac)
+      !configuredDevices.some(c => c.mac === d.mac),
     );
 
     if (newDevices.length > 0) {
@@ -200,9 +204,9 @@ function renderDevices(devices) {
   deviceList.innerHTML = `
     <div class="list-group list-group-flush">
       ${devices.map((device, index) => {
-        const isOffline = device.online === false;
-        const isChecking = device.online === null;
-        return `
+    const isOffline = device.online === false;
+    const isChecking = device.online === null;
+    return `
         <div class="list-group-item device-card d-flex justify-content-between align-items-center py-3 ${isOffline ? 'opacity-50' : ''}" onclick="showSettingsView(${index})">
           <div class="d-flex align-items-center">
             <div class="me-3">
@@ -213,11 +217,11 @@ function renderDevices(devices) {
                 ${device.displayName || device.name}
                 ${device.enabled === false ? '<span class="badge bg-secondary ms-2">Disabled</span>' : ''}
                 ${isChecking
-                  ? '<span class="badge bg-secondary-subtle text-secondary ms-2"><span class="spinner-border spinner-border-sm me-1" style="width:10px;height:10px;"></span>Checking...</span>'
-                  : isOffline
-                    ? '<span class="badge bg-danger-subtle text-danger ms-2"><span class="status-indicator status-offline me-1"></span>Offline</span>'
-                    : '<span class="badge bg-success-subtle text-success ms-2"><span class="status-indicator status-online me-1"></span>Online</span>'
-                }
+    ? '<span class="badge bg-secondary-subtle text-secondary ms-2"><span class="spinner-border spinner-border-sm me-1" style="width:10px;height:10px;"></span>Checking...</span>'
+    : isOffline
+      ? '<span class="badge bg-danger-subtle text-danger ms-2"><span class="status-indicator status-offline me-1"></span>Offline</span>'
+      : '<span class="badge bg-success-subtle text-success ms-2"><span class="status-indicator status-online me-1"></span>Online</span>'
+}
               </div>
               <div class="small text-body-secondary">
                 <span class="me-2"><i class="bi bi-box me-1"></i>${device.model || 'Key Light'}</span>
@@ -227,7 +231,8 @@ function renderDevices(devices) {
           </div>
           <i class="bi bi-chevron-right text-body-secondary"></i>
         </div>
-      `}).join('')}
+      `;
+  }).join('')}
     </div>
   `;
 }
@@ -260,8 +265,12 @@ async function loadDeviceSettings(index) {
         homebridge.request('/device/info', { host, port }),
         homebridge.request('/device/settings', { host, port }),
       ]);
-      if (infoResult.success) deviceInfo = infoResult.data;
-      if (settingsResult.success) currentState = settingsResult.data?.lights?.lights?.[0];
+      if (infoResult.success) {
+        deviceInfo = infoResult.data;
+      }
+      if (settingsResult.success) {
+        currentState = settingsResult.data?.lights?.lights?.[0];
+      }
     } catch (e) {
       console.error('[KeyLights] Failed to get device info:', e);
     }
@@ -309,8 +318,8 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
                     <span class="text-body-secondary" style="width: 90px;">Power</span>
                     <div class="fs-5">
                       ${currentState.on
-                        ? '<span class="badge bg-success"><i class="bi bi-circle-fill me-1"></i>On</span>'
-                        : '<span class="badge bg-secondary"><i class="bi bi-circle me-1"></i>Off</span>'}
+    ? '<span class="badge bg-success"><i class="bi bi-circle-fill me-1"></i>On</span>'
+    : '<span class="badge bg-secondary"><i class="bi bi-circle me-1"></i>Off</span>'}
                     </div>
                   </div>
                 </div>
@@ -474,14 +483,17 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
   `;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML oninput
 function updateBrightnessValue(value) {
   document.getElementById('brightnessValue').textContent = value + '%';
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML oninput
 function updateTemperatureValue(value) {
   document.getElementById('temperatureValue').textContent = value + 'K';
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
 async function saveDeviceSettings(index) {
   const device = discoveredDevices[index];
 
@@ -499,6 +511,7 @@ async function saveDeviceSettings(index) {
   document.getElementById('settingsDeviceName').textContent = device.displayName || device.name;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
 async function identifyDevice(index) {
   const device = discoveredDevices[index];
   const host = device.addresses?.[0] || device.ip || device.host;
@@ -517,6 +530,7 @@ async function identifyDevice(index) {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
 async function testConnection(index) {
   const device = discoveredDevices[index];
   const host = device.addresses?.[0] || device.ip || device.host;

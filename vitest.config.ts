@@ -2,26 +2,21 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    globals: true,
     environment: 'node',
-    include: ['tests/**/*.{test,spec}.ts'],
-    exclude: ['node_modules', 'dist'],
+    globals: true,
+    include: [
+      'src/**/*.{test,spec}.ts',
+      'test/**/*.{test,spec}.ts',
+      'tests/**/*.{test,spec}.ts',
+    ],
+    testTimeout: 10000,
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html', 'lcov'],
       include: ['src/**/*.ts'],
-      exclude: ['src/index.ts'],
+      exclude: ['src/**/*.{test,spec}.ts', 'src/**/__tests__/**'],
     },
-    testTimeout: 10000,
-    hookTimeout: 10000,
-    teardownTimeout: 5000,
-    pool: 'forks',
-    mockReset: true,
-    restoreMocks: true,
   },
-  resolve: {
-    alias: {
-      '@': '/src',
-    },
+  esbuild: {
+    target: 'es2022',
   },
 });
