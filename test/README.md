@@ -29,7 +29,7 @@ npm run test:ui
 ## Directory Structure
 
 ```
-tests/
+test/
 ├── unit/                    # Unit tests for individual classes/functions
 │   ├── KeyLightInstance.test.ts
 │   └── constants.test.ts
@@ -46,7 +46,7 @@ tests/
 
 ### Mocks
 
-Located in `tests/mocks/`:
+Located in `test/mocks/`:
 
 - **homebridge.ts**: Mock implementations for Homebridge APIs
   - `createMockLogger()` - Mock Logger for capturing log output
@@ -60,7 +60,7 @@ Located in `tests/mocks/`:
 
 ### Fixtures
 
-Located in `tests/fixtures/`:
+Located in `test/fixtures/`:
 
 - **keylight.ts**: Factory functions for test data
   - `createKeyLight()` - Basic device connection info
@@ -70,12 +70,12 @@ Located in `tests/fixtures/`:
 
 ### Writing Tests
 
-1. **Unit Tests** (`tests/unit/`): Test individual classes in isolation
+1. **Unit Tests** (`test/unit/`): Test individual classes in isolation
    - Mock all external dependencies (axios, homebridge)
    - Use fake timers for polling tests
    - Clean up resources in `afterEach`
 
-2. **Integration Tests** (`tests/integration/`): Test component interactions
+2. **Integration Tests** (`test/integration/`): Test component interactions
    - May use real implementations where appropriate
    - Test device discovery flows
    - Test accessory lifecycle

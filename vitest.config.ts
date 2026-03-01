@@ -7,7 +7,6 @@ export default defineConfig({
     include: [
       'src/**/*.{test,spec}.ts',
       'test/**/*.{test,spec}.ts',
-      'tests/**/*.{test,spec}.ts',
     ],
     testTimeout: 10000,
     coverage: {
