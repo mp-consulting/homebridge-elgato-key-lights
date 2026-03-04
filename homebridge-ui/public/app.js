@@ -83,6 +83,72 @@ function showSettingsView(index) {
   loadDeviceSettings(index);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
+function toggleManualAdd() {
+  const form = document.getElementById('manualAddForm');
+  form.classList.toggle('d-none');
+  if (!form.classList.contains('d-none')) {
+    document.getElementById('manualIp').focus();
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
+async function addDeviceByIp() {
+  const ip = document.getElementById('manualIp').value.trim();
+  const port = parseInt(document.getElementById('manualPort').value) || ELGATO_DEFAULT_PORT;
+
+  if (!ip) {
+    showToast('Please enter an IP address', 'danger');
+    return;
+  }
+
+  const alreadyConfigured = discoveredDevices.some(d => d.addresses?.[0] === ip || d.ip === ip);
+  if (alreadyConfigured) {
+    showToast('A device with this IP is already configured', 'danger');
+    return;
+  }
+
+  const btn = document.getElementById('addManualSubmit');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Adding...';
+
+  try {
+    const result = await homebridge.request('/device/info', { host: ip, port });
+
+    const deviceName = result.success ? (result.data?.displayName || result.data?.productName || `Key Light ${ip}`) : `Key Light ${ip}`;
+    const model = result.success ? (result.data?.productName || 'Key Light') : 'Key Light';
+
+    const newDevice = {
+      name: deviceName,
+      mac: '',
+      host: ip,
+      ip,
+      port,
+      model,
+      displayName: '',
+      powerOnBehavior: POWER_ON_BEHAVIOR.USE_GLOBAL,
+      enabled: true,
+      online: result.success,
+      addresses: [ip],
+    };
+
+    discoveredDevices.push(newDevice);
+    await saveDevicesToConfig(discoveredDevices);
+    renderDevices(discoveredDevices);
+
+    document.getElementById('manualAddForm').classList.add('d-none');
+    document.getElementById('manualIp').value = '';
+    document.getElementById('manualPort').value = String(ELGATO_DEFAULT_PORT);
+
+    showToast(result.success ? `Added ${deviceName}` : `Added device at ${ip} (offline — check IP/port)`, result.success ? 'success' : 'info');
+  } catch (error) {
+    showToast(`Failed to add device: ${error.message}`, 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Add';
+  }
+}
+
 async function discoverDevices() {
   const btn = document.getElementById('discoverBtn');
 

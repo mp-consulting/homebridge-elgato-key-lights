@@ -27,9 +27,33 @@
           <h5 class="mb-0">
             <i class="bi bi-broadcast me-2"></i>Devices
           </h5>
-          <button class="btn btn-primary" id="discoverBtn" onclick="discoverDevices()">
-            <i class="bi bi-search me-1"></i> Discover
-          </button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm" id="addManualBtn" onclick="toggleManualAdd()">
+              <i class="bi bi-plus me-1"></i>Add manually
+            </button>
+            <button class="btn btn-primary" id="discoverBtn" onclick="discoverDevices()">
+              <i class="bi bi-search me-1"></i> Discover
+            </button>
+          </div>
+        </div>
+        <div id="manualAddForm" class="d-none border-bottom px-3 py-3">
+          <div class="row g-2 align-items-end">
+            <div class="col">
+              <label class="form-label small mb-1">IP Address</label>
+              <input type="text" class="form-control form-control-sm" id="manualIp" placeholder="192.168.3.108"
+                onkeydown="if(event.key==='Enter') addDeviceByIp()">
+            </div>
+            <div class="col-auto">
+              <label class="form-label small mb-1">Port</label>
+              <input type="number" class="form-control form-control-sm" id="manualPort" value="9123" style="width: 90px;"
+                onkeydown="if(event.key==='Enter') addDeviceByIp()">
+            </div>
+            <div class="col-auto">
+              <button class="btn btn-primary btn-sm" id="addManualSubmit" onclick="addDeviceByIp()">
+                <i class="bi bi-plus-circle me-1"></i>Add
+              </button>
+            </div>
+          </div>
         </div>
         <div class="card-body p-0">
           <div id="deviceList"></div>
