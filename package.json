@@ -25,7 +25,8 @@
   "scripts": {
     "lint": "eslint . --max-warnings=0",
     "watch": "npm run build && npm link && nodemon",
-    "build": "rimraf ./dist && tsc",
+    "copy:ui-kit": "mkdir -p homebridge-ui/public/lib && cp node_modules/@mp-consulting/homebridge-ui-kit/dist/kit.css homebridge-ui/public/lib/ && cp node_modules/@mp-consulting/homebridge-ui-kit/dist/kit.js homebridge-ui/public/lib/",
+    "build": "npm run copy:ui-kit && rimraf ./dist && tsc",
     "prepublishOnly": "npm run lint && npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -49,6 +50,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@mp-consulting/homebridge-ui-kit": "^1.0.0",
     "@types/node": "^24.0.0",
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",

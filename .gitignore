@@ -40,6 +40,9 @@ tmp/
 .eslintcache
 
 
+# Homebridge UI kit (built assets, included in npm but not git)
+homebridge-ui/public/lib/
+
 # Claude Code
 .claude/
 
