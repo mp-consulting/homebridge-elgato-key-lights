@@ -71,8 +71,7 @@ async function loadConfiguredDevices() {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
 function showListView() {
-  document.getElementById('listView').classList.add('active');
-  document.getElementById('settingsView').classList.remove('active');
+  MpKit.View.show('listView');
   currentDeviceIndex = -1;
   renderDevices(discoveredDevices);
 }
@@ -80,8 +79,7 @@ function showListView() {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
 function showSettingsView(index) {
   currentDeviceIndex = index;
-  document.getElementById('listView').classList.remove('active');
-  document.getElementById('settingsView').classList.add('active');
+  MpKit.View.show('settingsView');
   loadDeviceSettings(index);
 }
 
@@ -191,13 +189,11 @@ function renderDevices(devices) {
   const deviceList = document.getElementById('deviceList');
 
   if (devices.length === 0) {
-    deviceList.innerHTML = `
-      <div class="text-center py-5">
-        <i class="bi bi-lightbulb fs-1 text-body-secondary"></i>
-        <p class="text-body-secondary mt-2 mb-1">No Key Lights configured</p>
-        <p class="text-body-secondary small">Click Discover to find devices on your network</p>
-      </div>
-    `;
+    deviceList.innerHTML = MpKit.EmptyState.render({
+      iconClass: 'bi bi-lightbulb',
+      title: 'No Key Lights configured',
+      hint: 'Click Discover to find devices on your network',
+    });
     return;
   }
 
@@ -206,8 +202,13 @@ function renderDevices(devices) {
       ${devices.map((device, index) => {
     const isOffline = device.online === false;
     const isChecking = device.online === null;
+    const statusBadge = isChecking
+      ? MpKit.StatusBadge.checking()
+      : isOffline
+        ? MpKit.StatusBadge.offline()
+        : MpKit.StatusBadge.online();
     return `
-        <div class="list-group-item device-card d-flex justify-content-between align-items-center py-3 ${isOffline ? 'opacity-50' : ''}" onclick="showSettingsView(${index})">
+        <div class="list-group-item mp-device-card d-flex justify-content-between align-items-center py-3 ${isOffline ? 'opacity-50' : ''}" onclick="showSettingsView(${index})">
           <div class="d-flex align-items-center">
             <div class="me-3">
               <i class="bi bi-lightbulb-fill fs-3 ${isOffline ? 'text-secondary' : 'text-warning'}"></i>
@@ -215,13 +216,8 @@ function renderDevices(devices) {
             <div>
               <div class="fw-semibold">
                 ${device.displayName || device.name}
-                ${device.enabled === false ? '<span class="badge bg-secondary ms-2">Disabled</span>' : ''}
-                ${isChecking
-    ? '<span class="badge bg-secondary-subtle text-secondary ms-2"><span class="spinner-border spinner-border-sm me-1" style="width:10px;height:10px;"></span>Checking...</span>'
-    : isOffline
-      ? '<span class="badge bg-danger-subtle text-danger ms-2"><span class="status-indicator status-offline me-1"></span>Offline</span>'
-      : '<span class="badge bg-success-subtle text-success ms-2"><span class="status-indicator status-online me-1"></span>Online</span>'
-}
+                ${device.enabled === false ? `<span class="ms-2">${MpKit.StatusBadge.disabled()}</span>` : ''}
+                <span class="ms-2">${statusBadge}</span>
               </div>
               <div class="small text-body-secondary">
                 <span class="me-2"><i class="bi bi-box me-1"></i>${device.model || 'Key Light'}</span>
@@ -244,15 +240,10 @@ async function loadDeviceSettings(index) {
   document.getElementById('settingsDeviceName').textContent = device.displayName || device.name;
   document.getElementById('settingsDeviceModel').textContent = device.model || 'Key Light';
   document.getElementById('settingsDeviceStatus').innerHTML = device.online
-    ? '<span class="badge bg-success-subtle text-success"><span class="status-indicator status-online me-1"></span>Online</span>'
-    : '<span class="badge bg-danger-subtle text-danger"><span class="status-indicator status-offline me-1"></span>Offline</span>';
+    ? MpKit.StatusBadge.online()
+    : MpKit.StatusBadge.offline();
 
-  settingsContent.innerHTML = `
-    <div class="text-center py-5">
-      <div class="spinner-border text-primary" role="status"></div>
-      <p class="text-body-secondary mt-2">Loading device information...</p>
-    </div>
-  `;
+  settingsContent.innerHTML = MpKit.Loading.render('Loading device information...');
 
   let deviceInfo = null;
   let currentState = null;
@@ -287,7 +278,7 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
 
   settingsContent.innerHTML = `
     <!-- Tabs Navigation -->
-    <ul class="nav nav-tabs mb-4" role="tablist">
+    <ul class="nav mp-tabs mb-4" role="tablist">
       <li class="nav-item" role="presentation">
         <button class="nav-link active" id="status-tab" data-bs-toggle="tab" data-bs-target="#status-pane" type="button" role="tab">
           <i class="bi bi-activity me-1"></i> Status
@@ -310,7 +301,7 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
       <!-- Status Tab -->
       <div class="tab-pane fade show active" id="status-pane" role="tabpanel">
         ${currentState ? `
-          <div class="card settings-card mb-4">
+          <div class="card mp-settings-card mb-4">
             <div class="card-body">
               <div class="row g-4 mb-4">
                 <div class="col-12">
@@ -330,7 +321,7 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
                     <span class="text-body-secondary" style="width: 90px;">Brightness</span>
                     <div class="flex-grow-1">
                       <div class="progress" style="height: 14px; background: linear-gradient(to right, #333 0%, #fff 100%); border-radius: 7px;">
-                        <div class="progress-bar" role="progressbar" style="width: ${currentState.brightness || 0}%; background: transparent; border-right: 3px solid #0d6efd;"></div>
+                        <div class="progress-bar" role="progressbar" style="width: ${currentState.brightness || 0}%; background: transparent; border-right: 3px solid var(--mp-primary);"></div>
                       </div>
                     </div>
                     <span class="fw-bold" style="min-width: 60px; text-align: right;">${currentState.brightness || 0}%</span>
@@ -343,7 +334,7 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
                     <span class="text-body-secondary" style="width: 90px;">Temperature</span>
                     <div class="flex-grow-1">
                       <div class="progress" style="height: 14px; background: linear-gradient(to right, #ff9329 0%, #fff 50%, #9fc5ff 100%); border-radius: 7px;">
-                        <div class="progress-bar" role="progressbar" style="width: ${tempPercent}%; background: transparent; border-right: 3px solid #0d6efd;"></div>
+                        <div class="progress-bar" role="progressbar" style="width: ${tempPercent}%; background: transparent; border-right: 3px solid var(--mp-primary);"></div>
                       </div>
                     </div>
                     <span class="fw-bold" style="min-width: 60px; text-align: right;">${kelvinTemp ? kelvinTemp + 'K' : 'N/A'}</span>
@@ -370,7 +361,7 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
 
       <!-- Settings Tab -->
       <div class="tab-pane fade" id="settings-pane" role="tabpanel">
-        <div class="card settings-card mb-4">
+        <div class="card mp-settings-card mb-4">
           <div class="card-body">
             <div class="mb-4">
               <div class="form-check form-switch">
@@ -395,7 +386,7 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
             </div>
 
             <hr class="my-4">
-            <h6 class="text-body-secondary mb-3"><i class="bi bi-sliders2 me-2"></i>Default Power On Settings</h6>
+            <h6 class="mp-label mb-3"><i class="bi bi-sliders2 me-2"></i>Default Power On Settings</h6>
             <p class="small text-body-secondary mb-4">Used when "Use default settings below" is selected.</p>
 
             <!-- Brightness Slider -->
@@ -448,31 +439,31 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
 
       <!-- Info Tab -->
       <div class="tab-pane fade" id="info-pane" role="tabpanel">
-        <div class="card settings-card">
+        <div class="card mp-settings-card">
           <div class="card-body">
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label text-body-secondary small">Product</label>
+                <label class="mp-label mb-1">Product</label>
                 <div class="fw-medium">${deviceInfo?.productName || device.model || 'Elgato Key Light'}</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label text-body-secondary small">Serial Number</label>
+                <label class="mp-label mb-1">Serial Number</label>
                 <div class="fw-medium font-monospace">${deviceInfo?.serialNumber || 'Unknown'}</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label text-body-secondary small">Firmware Version</label>
+                <label class="mp-label mb-1">Firmware Version</label>
                 <div class="fw-medium">${deviceInfo?.firmwareVersion || 'Unknown'}</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label text-body-secondary small">MAC Address</label>
+                <label class="mp-label mb-1">MAC Address</label>
                 <div class="fw-medium font-monospace">${device.mac || 'Unknown'}</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label text-body-secondary small">IP Address</label>
+                <label class="mp-label mb-1">IP Address</label>
                 <div class="fw-medium font-monospace">${host || 'Unknown'}</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label text-body-secondary small">Port</label>
+                <label class="mp-label mb-1">Port</label>
                 <div class="fw-medium">${device.port || ELGATO_DEFAULT_PORT}</div>
               </div>
             </div>

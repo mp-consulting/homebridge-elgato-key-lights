@@ -1,58 +1,18 @@
-.device-card {
-  transition: transform 0.2s, box-shadow 0.2s;
-  cursor: pointer;
-}
-
-.device-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3) !important;
-}
-
-.status-indicator {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.status-online {
-  background-color: #198754;
-  box-shadow: 0 0 6px #198754;
-}
-
-.status-offline {
-  background-color: #dc3545;
-}
-
-.info-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.spinner-discover {
-  width: 1rem;
-  height: 1rem;
-}
+/* Elgato Key Lights — plugin-specific styles only.
+   Common components (header, status, cards, tabs, footer) are in lib/kit.css */
 
 body {
   min-height: 600px;
 }
 
-.view {
-  display: none;
+/* Discover button spinner sizing */
+.spinner-discover {
+  width: 1rem;
+  height: 1rem;
 }
 
-.view.active {
-  display: block;
-}
+/* ── Slider styles (unique to this plugin) ─────────────────── */
 
-.settings-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Slider styles */
 .slider-container {
   position: relative;
   padding: 10px 0;
@@ -121,30 +81,6 @@ body {
   display: flex;
   justify-content: space-between;
   font-size: 0.75rem;
-  color: var(--bs-secondary);
+  color: var(--bs-secondary-color);
   margin-top: 4px;
-}
-
-/* Tab styles */
-.nav-tabs {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.nav-tabs .nav-link {
-  color: var(--bs-secondary);
-  border: none;
-  padding: 0.75rem 1.25rem;
-  font-weight: 500;
-}
-
-.nav-tabs .nav-link:hover {
-  color: var(--bs-body-color);
-  border: none;
-}
-
-.nav-tabs .nav-link.active {
-  color: var(--bs-primary);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid var(--bs-primary);
 }
