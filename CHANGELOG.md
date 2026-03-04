@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.0.6] - 2026-03-04
+
+### Added
+
+- New branded config UI using `@mp-consulting/homebridge-ui-kit` design system
+- Manual device entry by IP address and port (for devices on different subnets)
+- Remove device button with inline confirmation in device list
+- Settings tab split into two columns (identity/behavior left, default power-on values right)
+
+### Fixed
+
+- Config UI iframe blocked `window.confirm()` — replaced with inline Yes/No buttons
+
+### Changed
+
+- Unified tooling: Vitest v4, ESLint flat config, nodemon
+- Standardized `.gitignore` and `.npmignore`
+
+---
+
 ## [1.0.5] - 2026-01-24
 
 ### Fixed
