@@ -455,68 +455,77 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
       <div class="tab-pane fade" id="settings-pane" role="tabpanel">
         <div class="card mp-settings-card mb-4">
           <div class="card-body">
-            <div class="mb-4">
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="deviceEnabled" ${device.enabled !== false ? 'checked' : ''}>
-                <label class="form-check-label" for="deviceEnabled">Enable this device in HomeKit</label>
-              </div>
-            </div>
+            <div class="row g-4">
 
-            <div class="mb-4">
-              <label class="form-label" for="displayName">Display Name</label>
-              <input type="text" class="form-control" id="displayName" value="${device.displayName || ''}" placeholder="${device.name}">
-              <div class="form-text">Custom name to show in HomeKit (leave empty to use device name)</div>
-            </div>
+              <!-- Left column: Identity & behavior -->
+              <div class="col-md-6">
+                <div class="mb-4">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="deviceEnabled" ${device.enabled !== false ? 'checked' : ''}>
+                    <label class="form-check-label" for="deviceEnabled">Enable this device in HomeKit</label>
+                  </div>
+                </div>
 
-            <div class="mb-4">
-              <label class="form-label" for="powerOnBehavior">Power On Behavior</label>
-              <select class="form-select" id="powerOnBehavior">
-                <option value="${POWER_ON_BEHAVIOR.USE_GLOBAL}" ${device.powerOnBehavior === POWER_ON_BEHAVIOR.USE_GLOBAL || !device.powerOnBehavior ? 'selected' : ''}>Use global setting</option>
-                <option value="${POWER_ON_BEHAVIOR.RESTORE_LAST}" ${device.powerOnBehavior === POWER_ON_BEHAVIOR.RESTORE_LAST ? 'selected' : ''}>Restore last settings used</option>
-                <option value="${POWER_ON_BEHAVIOR.USE_DEFAULT}" ${device.powerOnBehavior === POWER_ON_BEHAVIOR.USE_DEFAULT ? 'selected' : ''}>Use default settings below</option>
-              </select>
-            </div>
+                <div class="mb-4">
+                  <label class="form-label" for="displayName">Display Name</label>
+                  <input type="text" class="form-control" id="displayName" value="${device.displayName || ''}" placeholder="${device.name}">
+                  <div class="form-text">Custom name to show in HomeKit (leave empty to use device name)</div>
+                </div>
 
-            <hr class="my-4">
-            <h6 class="mp-label mb-3"><i class="bi bi-sliders2 me-2"></i>Default Power On Settings</h6>
-            <p class="small text-body-secondary mb-4">Used when "Use default settings below" is selected.</p>
-
-            <!-- Brightness Slider -->
-            <div class="mb-4">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <label class="form-label mb-0">
-                  <i class="bi bi-brightness-high me-2"></i>Brightness
-                </label>
-                <span class="slider-value" id="brightnessValue">${device.powerOnBrightness || BRIGHTNESS_DEFAULT}%</span>
-              </div>
-              <div class="slider-container">
-                <input type="range" class="brightness-slider" id="powerOnBrightness"
-                  min="${BRIGHTNESS_MIN}" max="${BRIGHTNESS_MAX}" value="${device.powerOnBrightness || BRIGHTNESS_DEFAULT}"
-                  oninput="updateBrightnessValue(this.value)">
-                <div class="slider-label">
-                  <span>${BRIGHTNESS_MIN}%</span>
-                  <span>${BRIGHTNESS_MAX}%</span>
+                <div class="mb-0">
+                  <label class="form-label" for="powerOnBehavior">Power On Behavior</label>
+                  <select class="form-select" id="powerOnBehavior">
+                    <option value="${POWER_ON_BEHAVIOR.USE_GLOBAL}" ${device.powerOnBehavior === POWER_ON_BEHAVIOR.USE_GLOBAL || !device.powerOnBehavior ? 'selected' : ''}>Use global setting</option>
+                    <option value="${POWER_ON_BEHAVIOR.RESTORE_LAST}" ${device.powerOnBehavior === POWER_ON_BEHAVIOR.RESTORE_LAST ? 'selected' : ''}>Restore last settings used</option>
+                    <option value="${POWER_ON_BEHAVIOR.USE_DEFAULT}" ${device.powerOnBehavior === POWER_ON_BEHAVIOR.USE_DEFAULT ? 'selected' : ''}>Use default settings below</option>
+                  </select>
                 </div>
               </div>
-            </div>
 
-            <!-- Temperature Slider -->
-            <div class="mb-3">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <label class="form-label mb-0">
-                  <i class="bi bi-thermometer-half me-2"></i>Color Temperature
-                </label>
-                <span class="slider-value" id="temperatureValue">${device.powerOnTemperature || TEMPERATURE_DEFAULT}K</span>
-              </div>
-              <div class="slider-container">
-                <input type="range" class="temperature-slider" id="powerOnTemperature"
-                  min="${TEMPERATURE_MIN}" max="${TEMPERATURE_MAX}" step="${TEMPERATURE_STEP}" value="${device.powerOnTemperature || TEMPERATURE_DEFAULT}"
-                  oninput="updateTemperatureValue(this.value)">
-                <div class="slider-label">
-                  <span>${TEMPERATURE_MIN}K (Warm)</span>
-                  <span>${TEMPERATURE_MAX}K (Cool)</span>
+              <!-- Right column: Default power-on values -->
+              <div class="col-md-6">
+                <h6 class="mp-label mb-1"><i class="bi bi-sliders2 me-2"></i>Default Power On Settings</h6>
+                <p class="small text-body-secondary mb-4">Used when "Use default settings below" is selected.</p>
+
+                <!-- Brightness Slider -->
+                <div class="mb-4">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0">
+                      <i class="bi bi-brightness-high me-2"></i>Brightness
+                    </label>
+                    <span class="slider-value" id="brightnessValue">${device.powerOnBrightness || BRIGHTNESS_DEFAULT}%</span>
+                  </div>
+                  <div class="slider-container">
+                    <input type="range" class="brightness-slider" id="powerOnBrightness"
+                      min="${BRIGHTNESS_MIN}" max="${BRIGHTNESS_MAX}" value="${device.powerOnBrightness || BRIGHTNESS_DEFAULT}"
+                      oninput="updateBrightnessValue(this.value)">
+                    <div class="slider-label">
+                      <span>${BRIGHTNESS_MIN}%</span>
+                      <span>${BRIGHTNESS_MAX}%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Temperature Slider -->
+                <div class="mb-0">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0">
+                      <i class="bi bi-thermometer-half me-2"></i>Color Temperature
+                    </label>
+                    <span class="slider-value" id="temperatureValue">${device.powerOnTemperature || TEMPERATURE_DEFAULT}K</span>
+                  </div>
+                  <div class="slider-container">
+                    <input type="range" class="temperature-slider" id="powerOnTemperature"
+                      min="${TEMPERATURE_MIN}" max="${TEMPERATURE_MAX}" step="${TEMPERATURE_STEP}" value="${device.powerOnTemperature || TEMPERATURE_DEFAULT}"
+                      oninput="updateTemperatureValue(this.value)">
+                    <div class="slider-label">
+                      <span>${TEMPERATURE_MIN}K (Warm)</span>
+                      <span>${TEMPERATURE_MAX}K (Cool)</span>
+                    </div>
+                  </div>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
