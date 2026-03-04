@@ -64,6 +64,7 @@ export default tseslint.config(
         homebridge: 'readonly',
         bootstrap: 'readonly',
         MpKit: 'readonly',
+        confirm: 'readonly',
         console: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',

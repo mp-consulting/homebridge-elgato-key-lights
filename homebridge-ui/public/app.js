@@ -84,6 +84,19 @@ function showSettingsView(index) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
+async function removeDevice(index) {
+  const device = discoveredDevices[index];
+  const name = device.displayName || device.name;
+  if (!confirm(`Remove "${name}" from HomeKit?`)) {
+    return;
+  }
+  discoveredDevices.splice(index, 1);
+  await saveDevicesToConfig(discoveredDevices);
+  renderDevices(discoveredDevices);
+  showToast(`Removed ${name}`, 'success');
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
 function toggleManualAdd() {
   const form = document.getElementById('manualAddForm');
   form.classList.toggle('d-none');
@@ -291,7 +304,13 @@ function renderDevices(devices) {
               </div>
             </div>
           </div>
-          <i class="bi bi-chevron-right text-body-secondary"></i>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-link text-body-secondary p-1" title="Remove device"
+              onclick="event.stopPropagation(); removeDevice(${index})">
+              <i class="bi bi-trash"></i>
+            </button>
+            <i class="bi bi-chevron-right text-body-secondary"></i>
+          </div>
         </div>
       `;
   }).join('')}
