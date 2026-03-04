@@ -84,12 +84,19 @@ function showSettingsView(index) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
+function confirmRemove(index, btn) {
+  const container = btn.parentElement;
+  container.innerHTML = `
+    <span class="small text-body-secondary me-1">Remove?</span>
+    <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); removeDevice(${index})">Yes</button>
+    <button class="btn btn-outline-secondary btn-sm" onclick="event.stopPropagation(); renderDevices(discoveredDevices)">No</button>
+  `;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
 async function removeDevice(index) {
   const device = discoveredDevices[index];
   const name = device.displayName || device.name;
-  if (!confirm(`Remove "${name}" from HomeKit?`)) {
-    return;
-  }
   discoveredDevices.splice(index, 1);
   await saveDevicesToConfig(discoveredDevices);
   renderDevices(discoveredDevices);
@@ -306,7 +313,7 @@ function renderDevices(devices) {
           </div>
           <div class="d-flex align-items-center gap-2">
             <button class="btn btn-link text-body-secondary p-1" title="Remove device"
-              onclick="event.stopPropagation(); removeDevice(${index})">
+              onclick="event.stopPropagation(); confirmRemove(${index}, this)">
               <i class="bi bi-trash"></i>
             </button>
             <i class="bi bi-chevron-right text-body-secondary"></i>
