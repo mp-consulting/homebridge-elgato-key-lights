@@ -1,5 +1,5 @@
 {
-  "displayName": "Homebridge Elgato Key Lights",
+  "displayName": "Elgato Key Lights",
   "name": "@mp-consulting/homebridge-elgato-key-lights",
   "version": "1.0.8",
   "description": "A Homebridge plugin for Elgato Key Light and Key Light Air",
