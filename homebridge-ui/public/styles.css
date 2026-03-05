@@ -26,14 +26,16 @@ body {
   height: 12px;
   border-radius: 6px;
   outline: none;
+  /* Subtle border so the track is visible in both light and dark mode */
+  box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.35);
 }
 
 .brightness-slider {
-  background: linear-gradient(to right, #333 0%, #fff 100%);
+  background: linear-gradient(to right, #444 0%, #e8e8e8 100%);
 }
 
 .temperature-slider {
-  background: linear-gradient(to right, #ff9329 0%, #fff 50%, #9fc5ff 100%);
+  background: linear-gradient(to right, #ff9329 0%, #e8e8e8 50%, #9fc5ff 100%);
 }
 
 .brightness-slider::-webkit-slider-thumb,

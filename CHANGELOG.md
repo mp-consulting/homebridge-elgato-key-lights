@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.7] - 2026-03-05
+
+### Fixed
+
+- **Config UI light mode**: Hardcoded `data-bs-theme="dark"` broke layout in light mode (dark cards on white background). Added early inline theme detection from `window.matchMedia` and confirmed via `homebridge.getUserSettings()` after ready.
+- **Slider visibility in light mode**: Slider tracks ending in `#fff` were invisible against white background. Changed to `#e8e8e8` and added a subtle `box-shadow` border so tracks are visible in both light and dark mode.
+
 ## [1.0.6] - 2026-03-04
 
 ### Added
