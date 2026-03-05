@@ -14,8 +14,8 @@
     "url": "https://github.com/mp-consulting/homebridge-elgato-key-lights/issues"
   },
   "funding": {
-    "type": "github",
-    "url": "https://github.com/sponsors/mp-consulting"
+    "type": "paypal",
+    "url": "https://paypal.me/mickaelpalma"
   },
   "engines": {
     "node": "^20.0.0 || ^22.0.0 || ^24.0.0",
