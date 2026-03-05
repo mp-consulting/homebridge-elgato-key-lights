@@ -72,6 +72,38 @@ body {
   background: transparent;
 }
 
+/* ── Nav tabs (active tab indicator) ─────────────────────── */
+
+/* Bootstrap's box-style trick (border-bottom-color: var(--bs-body-bg)) and
+   simple margin-bottom overrides both fail in the Homebridge iframe because
+   background colors don't reliably match, and flex negative margins vary by
+   browser/context.
+   This approach uses position:absolute ::after on the active tab. Positioned
+   descendants are painted AFTER their non-positioned ancestor's border in the
+   CSS paint order, so the opaque ::after always physically covers the grey
+   nav-tabs border — no background-color matching needed. */
+.nav-tabs .nav-link {
+  position: relative;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  margin-bottom: 0;
+}
+.nav-tabs .nav-link.active {
+  color: var(--bs-primary) !important;
+  background: transparent !important;
+}
+.nav-tabs .nav-link.active::after {
+  content: '';
+  position: absolute;
+  top: 100%;   /* starts at the bottom edge of the tab button */
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--bs-primary);
+  z-index: 1;
+}
+
 .slider-value {
   font-size: 1.25rem;
   font-weight: 600;

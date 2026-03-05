@@ -112,9 +112,14 @@ async function removeDevice(index) {
   const device = discoveredDevices[index];
   const name = device.displayName || device.name;
   discoveredDevices.splice(index, 1);
-  await saveDevicesToConfig(discoveredDevices);
-  renderDevices(discoveredDevices);
-  showToast(`Removed ${name}`, 'success');
+  try {
+    await saveDevicesToConfig(discoveredDevices);
+    renderDevices(discoveredDevices);
+    showToast(`Removed ${name}`, 'success');
+  } catch (e) {
+    console.error('[KeyLights] Failed to remove device:', e);
+    showToast(`Remove failed: ${e.message}`, 'danger');
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
@@ -271,18 +276,17 @@ async function saveDevicesToConfig(devices) {
     enabled: d.enabled !== false,
   }));
 
-  try {
-    const pluginConfig = await homebridge.getPluginConfig();
-    if (pluginConfig && pluginConfig.length > 0) {
-      pluginConfig[0].devices = devicesToSave;
-      await homebridge.updatePluginConfig(pluginConfig);
-      await homebridge.savePluginConfig();
-      configuredDevices = devicesToSave;
-    }
-  } catch (e) {
-    console.error('[KeyLights] Failed to save devices:', e);
-    showToast(`Save error: ${e.message}`, 'danger');
+  let pluginConfig = await homebridge.getPluginConfig();
+
+  if (!pluginConfig || pluginConfig.length === 0) {
+    // First-time setup: platform block not yet in config.json — create it
+    pluginConfig = [{ platform: 'ElgatoKeyLights', name: 'Elgato Key Lights' }];
   }
+
+  pluginConfig[0].devices = devicesToSave;
+  await homebridge.updatePluginConfig(pluginConfig);
+  await homebridge.savePluginConfig();
+  configuredDevices = devicesToSave;
 }
 
 function renderDevices(devices) {
@@ -384,19 +388,19 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
 
   settingsContent.innerHTML = `
     <!-- Tabs Navigation -->
-    <ul class="nav mp-tabs mb-4" role="tablist">
+    <ul class="nav nav-tabs mb-4" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="status-tab" data-bs-toggle="tab" data-bs-target="#status-pane" type="button" role="tab">
+        <button class="nav-link active" id="status-tab" data-bs-toggle="tab" data-bs-target="#status-pane" type="button" role="tab" aria-controls="status-pane" aria-selected="true">
           <i class="bi bi-activity me-1"></i> Status
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-pane" type="button" role="tab">
+        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-pane" type="button" role="tab" aria-controls="settings-pane" aria-selected="false">
           <i class="bi bi-gear me-1"></i> Settings
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="info-tab" data-bs-toggle="tab" data-bs-target="#info-pane" type="button" role="tab">
+        <button class="nav-link" id="info-tab" data-bs-toggle="tab" data-bs-target="#info-pane" type="button" role="tab" aria-controls="info-pane" aria-selected="false">
           <i class="bi bi-info-circle me-1"></i> Info
         </button>
       </li>
@@ -611,10 +615,14 @@ async function saveDeviceSettings(index) {
 
   discoveredDevices[index] = device;
 
-  await saveDevicesToConfig(discoveredDevices);
-  showToast('Device settings saved', 'success');
-
-  document.getElementById('settingsDeviceName').textContent = device.displayName || device.name;
+  try {
+    await saveDevicesToConfig(discoveredDevices);
+    showToast('Device settings saved', 'success');
+    document.getElementById('settingsDeviceName').textContent = device.displayName || device.name;
+  } catch (e) {
+    console.error('[KeyLights] Failed to save device settings:', e);
+    showToast(`Save failed: ${e.message}`, 'danger');
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick

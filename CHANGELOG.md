@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.0.8] - 2026-03-05
+
+### Fixed
+
+- **Config UI save to config.json**: `saveDevicesToConfig` was silently doing nothing when `homebridge.getPluginConfig()` returned an empty array (plugin installed but platform block not yet in config.json), while still showing a success toast. Now creates the initial platform config block on first save. Errors now propagate correctly so the success toast only fires on an actual successful save.
+- **Nav tabs active indicator**: Replaced fragile `border-bottom-color: var(--bs-body-bg)` background-matching approach with a `position: absolute; top: 100%` `::after` pseudo-element. Positioned descendants paint after their ancestor's border in CSS paint order, so the opaque primary-coloured strip reliably covers the grey tab bar border regardless of the Homebridge iframe background.
+- **Manual add Cancel button**: Added a Cancel button next to Add in the manual IP entry form.
+
+### Changed
+
+- Settings tabs now use Bootstrap's native `nav-tabs` component (previously custom `mp-tabs`).
+
 ## [1.0.7] - 2026-03-05
 
 ### Fixed
