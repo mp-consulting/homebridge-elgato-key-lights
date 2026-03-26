@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.10] - 2026-03-26
+
+### Changed
+
+- **CI**: Removed CodeQL analysis workflow
+- **Dependencies**: Updated all dependencies to latest compatible versions
+
 ## [1.0.9] - 2026-03-05
 
 ### Changed
