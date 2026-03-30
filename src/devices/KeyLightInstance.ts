@@ -70,7 +70,7 @@ export class KeyLightInstance implements KeyLight {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       log.error(`Failed to initialize device ${data.name}: ${message}`);
-      throw new Error(`Device initialization failed: ${message}`);
+      throw new Error(`Device initialization failed: ${message}`, { cause: error });
     }
 
     instance.startPolling();
