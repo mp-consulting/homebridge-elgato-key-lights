@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.16] - 2026-03-30
+
+### Fixed
+
+- ESLint 10 lint + TypeScript 6 module resolution
+
 ## [1.0.10] - 2026-03-30
 
 ### Changed
