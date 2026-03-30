@@ -1,11 +1,10 @@
 # Changelog
 
-## [1.0.10] - 2026-03-26
+## [1.0.10] - 2026-03-30
 
 ### Changed
 
-- **CI**: Removed CodeQL analysis workflow
-- **Dependencies**: Updated all dependencies to latest compatible versions
+- **Dependencies**: Updated all dependencies to latest versions including `@homebridge/plugin-ui-utils` ^2.2.3, `axios` ^1.14.0, `homebridge-lib` ^7.3.2, `eslint` ^10.1.0, `typescript` ^6.0.2, `vitest` ^4.1.2, and other dev dependencies.
 
 ## [1.0.9] - 2026-03-05
 
