@@ -53,6 +53,7 @@ homebridge-ui/                  # Custom config UI
 - **Polling-based sync** with configurable interval (default 1000ms)
 - **Mirek/Kelvin conversion** for HomeKit color temperature (143-344 mirek)
 - **Per-device config** overrides via MAC address matching
+- **Custom UI**: Uses Homebridge custom UI framework (`homebridge-ui/`) for plugin configuration management
 
 ## Code Style
 
