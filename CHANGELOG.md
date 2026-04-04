@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.18] - 2026-04-04
+
+### Changed
+
+- **Docs**: Update CLAUDE.md
+
 ## [1.0.17] - 2026-03-30
 
 ### Changed
