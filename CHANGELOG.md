@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.20] - 2026-04-17
+
+### Fixed
+
+- **Publish workflow**: Bump Node to 24 in `publish.yml` — aligns with other homebridge plugin repos and unblocks the `npm install -g npm@latest` step that failed on the Node 22 runner
+
 ## [1.0.19] - 2026-04-17
 
 ### Changed
