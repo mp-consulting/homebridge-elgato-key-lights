@@ -110,14 +110,21 @@ function confirmRemove(index, btn) {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
 async function removeDevice(index) {
   const device = discoveredDevices[index];
+  if (!device) {
+    // Stale index (e.g. the list changed since the confirmation was shown)
+    renderDevices(discoveredDevices);
+    return;
+  }
   const name = device.displayName || device.name;
-  discoveredDevices.splice(index, 1);
+  const remaining = discoveredDevices.filter((_, i) => i !== index);
   try {
-    await saveDevicesToConfig(discoveredDevices);
+    await saveDevicesToConfig(remaining);
+    discoveredDevices = remaining;
     renderDevices(discoveredDevices);
     showToast(`Removed ${name}`, 'success');
   } catch (e) {
     console.error('[KeyLights] Failed to remove device:', e);
+    renderDevices(discoveredDevices);
     showToast(`Remove failed: ${e.message}`, 'danger');
   }
 }
@@ -202,13 +209,14 @@ async function discoverDevices() {
     discoveredDevices = mergedDevices;
     renderDevices(mergedDevices);
 
-    // Check for new devices not in config
+    // Report new devices not in config. They are only displayed, never saved
+    // automatically — auto-saving here would silently re-add devices the user
+    // just removed. They are persisted on the next explicit save action.
     const newDevices = discovered.filter(d =>
       !configuredDevices.some(c => c.mac === d.mac),
     );
 
     if (newDevices.length > 0) {
-      await saveDevicesToConfig(mergedDevices);
       showToast(`Found ${newDevices.length} new device(s)`, 'success');
     }
   } catch (error) {
@@ -285,8 +293,19 @@ async function saveDevicesToConfig(devices) {
 
   pluginConfig[0].devices = devicesToSave;
   await homebridge.updatePluginConfig(pluginConfig);
-  await homebridge.savePluginConfig();
+  await persistPluginConfig();
   configuredDevices = devicesToSave;
+}
+
+async function persistPluginConfig() {
+  // homebridge-config-ui-x 5.24.0 relays savePluginConfig's result through
+  // postMessage without awaiting it, which throws an uncaught DataCloneError in
+  // the parent window: the save still executes, but the response never reaches
+  // this frame. Race a timeout so the UI does not hang forever on the await.
+  await Promise.race([
+    homebridge.savePluginConfig(),
+    new Promise((resolve) => setTimeout(resolve, 2000)),
+  ]);
 }
 
 function renderDevices(devices) {
