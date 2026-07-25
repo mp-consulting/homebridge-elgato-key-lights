@@ -6,4 +6,4 @@ export const PLATFORM_NAME = 'ElgatoKeyLights';
 /**
  * This must match the name of your plugin as defined the package.json
  */
-export const PLUGIN_NAME = 'homebridge-keylights';
+export const PLUGIN_NAME = '@mp-consulting/homebridge-elgato-key-lights';

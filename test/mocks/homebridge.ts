@@ -31,6 +31,7 @@ export function createMockService(): Service {
     }),
     updateCharacteristic: vi.fn().mockReturnThis(),
     addCharacteristic: vi.fn().mockReturnThis(),
+    addOptionalCharacteristic: vi.fn().mockReturnThis(),
     removeCharacteristic: vi.fn().mockReturnThis(),
   } as unknown as Service;
 
@@ -42,6 +43,7 @@ export function createMockService(): Service {
  */
 export function createMockCharacteristic(): Characteristic {
   return {
+    on: vi.fn().mockReturnThis(),
     onGet: vi.fn().mockReturnThis(),
     onSet: vi.fn().mockReturnThis(),
     updateValue: vi.fn().mockReturnThis(),
@@ -61,7 +63,12 @@ export function createMockAccessory(uuid: string, displayName: string): Platform
     UUID: uuid,
     displayName,
     context: {},
-    getService: vi.fn((serviceType) => services.get(serviceType)),
+    getService: vi.fn((serviceType) => {
+      if (!services.has(serviceType)) {
+        services.set(serviceType, createMockService());
+      }
+      return services.get(serviceType);
+    }),
     addService: vi.fn((serviceType) => {
       const service = createMockService();
       services.set(serviceType, service);
@@ -69,6 +76,7 @@ export function createMockAccessory(uuid: string, displayName: string): Platform
     }),
     removeService: vi.fn(),
     getServiceById: vi.fn(),
+    on: vi.fn(),
   } as unknown as PlatformAccessory;
 }
 

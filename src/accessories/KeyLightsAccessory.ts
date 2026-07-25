@@ -54,10 +54,13 @@ export class KeyLightsAccessory {
       .on('set', this.setBrightness.bind(this))
       .on('get', this.getBrightness.bind(this));
 
-    // Register handlers for the Color Temperature Characteristic and set the valid value range
+    // Register handlers for the Color Temperature Characteristic and set the valid value range.
+    // The current device value must be set before narrowing the range: the HAP default
+    // (140 mirek) is outside our valid range and setProps warns on out-of-range values.
     this.service.getCharacteristic(this.platform.Characteristic.ColorTemperature)
       .on('set', this.setColorTemperature.bind(this))
       .on('get', this.getColorTemperature.bind(this))
+      .updateValue(this.light.getProperty('temperature'))
       .setProps({
         validValueRanges: [COLOR_TEMPERATURE.MIN_MIREK, COLOR_TEMPERATURE.MAX_MIREK],
       });

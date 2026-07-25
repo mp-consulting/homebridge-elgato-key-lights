@@ -30,6 +30,9 @@ export function clampColorTemperature(value: number): number {
 /** Default polling rate in milliseconds */
 export const DEFAULT_POLLING_RATE_MS = 1000;
 
+/** Default API port for Elgato lights */
+export const DEFAULT_DEVICE_PORT = 9123;
+
 /** Kelvin to mirek conversion factor */
 export const KELVIN_TO_MIREK_FACTOR = 1000000;
 

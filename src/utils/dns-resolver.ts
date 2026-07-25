@@ -8,7 +8,7 @@ const execAsync = promisify(exec);
 /**
  * Check if a string is an IPv4 address
  */
-function isIPv4Address(str: string): boolean {
+export function isIPv4Address(str: string): boolean {
   const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
   if (!ipv4Regex.test(str)) {
     return false;

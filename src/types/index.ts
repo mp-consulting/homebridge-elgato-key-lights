@@ -25,8 +25,26 @@ export interface KeyLight {
 export interface DeviceConfig {
   /** MAC address of the device */
   mac: string;
+  /** Device name as discovered on the network */
+  name?: string;
   /** Custom display name for HomeKit */
   displayName?: string;
+  /** mDNS hostname of the device */
+  host?: string;
+  /** IP address of the device (preferred over host when set) */
+  ip?: string;
+  /** API port of the device */
+  port?: number;
+  /** Device model as reported by mDNS */
+  model?: string;
+  /** Whether the device should be added to HomeKit (default true) */
+  enabled?: boolean;
+  /** Per-device power-on behavior (0 = use global setting) */
+  powerOnBehavior?: number;
+  /** Per-device power-on brightness in percent */
+  powerOnBrightness?: number;
+  /** Per-device power-on temperature in Kelvin */
+  powerOnTemperature?: number;
 }
 
 /** Device power-on and transition settings */

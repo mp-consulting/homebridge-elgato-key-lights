@@ -11,10 +11,11 @@ import type { Service as BonjourService, Browser } from 'bonjour-service';
 import { Bonjour } from 'bonjour-service';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from '../config/settings.js';
-import { BONJOUR_SERVICE_TYPE, KELVIN_TO_MIREK_FACTOR, DEFAULT_DEVICE_SETTINGS } from '../config/constants.js';
+import { BONJOUR_SERVICE_TYPE, KELVIN_TO_MIREK_FACTOR, DEFAULT_DEVICE_SETTINGS, DEFAULT_DEVICE_PORT } from '../config/constants.js';
 import { KeyLightsAccessory } from '../accessories/KeyLightsAccessory.js';
 import { KeyLightInstance } from '../devices/KeyLightInstance.js';
 import { DeviceCatalog } from './DeviceCatalog.js';
+import { isIPv4Address } from '../utils/dns-resolver.js';
 import type { KeyLight, KeyLightSettings, DeviceConfig } from '../types/index.js';
 
 /**
@@ -49,6 +50,7 @@ export class KeyLightsPlatform implements DynamicPlatformPlugin {
     // We can start discovering devices on the network
     this.api.on('didFinishLaunching', () => {
       this.log.debug('Executed didFinishLaunching callback');
+      this.registerConfiguredDevices();
       this.startDiscovery();
     });
 
@@ -90,6 +92,40 @@ export class KeyLightsPlatform implements DynamicPlatformPlugin {
   }
 
   /**
+   * Register devices from the config.json devices array.
+   * This makes configured devices available even when runtime mDNS discovery
+   * fails (e.g. in containers where multicast or .local resolution is unreliable).
+   */
+  private registerConfiguredDevices(): void {
+    const devices = this.config.devices as DeviceConfig[] | undefined;
+    if (!devices || !Array.isArray(devices)) {
+      return;
+    }
+
+    for (const device of devices) {
+      if (device.enabled === false) {
+        this.log.info('Skipping disabled device:', device.name ?? device.mac);
+        continue;
+      }
+      if (!device.mac || (!device.ip && !device.host)) {
+        this.log.warn('Skipping configured device without MAC and IP/hostname:', JSON.stringify(device));
+        continue;
+      }
+
+      const light: KeyLight = {
+        hostname: device.ip ?? device.host!,
+        port: device.port ?? DEFAULT_DEVICE_PORT,
+        name: device.name ?? device.mac,
+        mac: device.mac.toUpperCase(),
+        addresses: device.ip ? [device.ip] : undefined,
+      };
+
+      this.log.info('Registering configured device:', light.name);
+      this.initializeDevice(light);
+    }
+  }
+
+  /**
    * Handle a discovered mDNS service
    */
   private handleDiscoveredService(remoteService: BonjourService): void {
@@ -99,37 +135,60 @@ export class KeyLightsPlatform implements DynamicPlatformPlugin {
       hostname: this.getHostnameForLight(remoteService),
       port: remoteService.port,
       name: remoteService.name,
-      mac: (remoteService.txt?.id as string) ?? '',
+      mac: ((remoteService.txt?.id as string) ?? '').toUpperCase(),
       addresses: remoteService.addresses,
     };
 
-    if (this.catalog.has(light.mac)) {
-      // Device already in catalog, update connection data
-      this.log.debug('Updating connection data for accessory:', remoteService.name);
-      this.catalog.updateConnectionData(light.mac, light);
-      this.catalog.getAccessory(light.mac)?.updateConnectionData(light);
+    const existing = this.catalog.get(light.mac);
+    if (existing) {
+      if (existing.instance) {
+        // Device already initialized, update connection data
+        this.log.debug('Updating connection data for accessory:', remoteService.name);
+        this.catalog.updateConnectionData(light.mac, light);
+        this.catalog.getAccessory(light.mac)?.updateConnectionData(light);
+      } else if (existing.state === 'error') {
+        // A previous initialization attempt (e.g. from config) failed; retry with mDNS data
+        this.log.info('Retrying initialization with discovered connection data:', remoteService.name);
+        this.initializeDevice(light);
+      }
+      // Otherwise initialization is already in progress
       return;
     }
 
     // New device discovered
     this.log.info('Discovered accessory on network:', remoteService.name);
-    this.catalog.registerDiscovery(light);
+    this.initializeDevice(light);
+  }
+
+  /**
+   * Initialize a device (from config or mDNS discovery) and create its accessory
+   */
+  private initializeDevice(light: KeyLight): void {
+    if (this.getDeviceConfig(light.mac)?.enabled === false) {
+      this.log.debug('Ignoring disabled device:', light.name);
+      return;
+    }
+
+    if (this.catalog.has(light.mac)) {
+      this.catalog.updateConnectionData(light.mac, light);
+    } else {
+      this.catalog.registerDiscovery(light);
+    }
     this.catalog.markInitializing(light.mac);
 
     KeyLightInstance.createInstance(light, this.log, this.config.pollingRate)
       .then((instance) => {
         this.log.debug('Created device instance for', instance.name);
         this.catalog.registerInstance(light.mac, instance);
-        // Cache the resolved IP for future use
-        if (instance.hostname !== light.hostname) {
+        // Cache the working IP so later mDNS updates never replace it with an unresolvable .local hostname
+        if (isIPv4Address(instance.hostname)) {
           this.catalog.setResolvedIp(light.mac, instance.hostname);
         }
         this.configureDevice(instance);
       })
       .catch((error: unknown) => {
         const reason = error instanceof Error ? error.message : String(error);
-        this.log.error('Could not register accessory, skipping', remoteService.name);
-        this.log.debug('Reason:', reason);
+        this.log.error(`Could not register accessory ${light.name}, skipping:`, reason);
         this.catalog.markError(light.mac, reason);
       });
   }
@@ -146,21 +205,27 @@ export class KeyLightsPlatform implements DynamicPlatformPlugin {
   }
 
   /**
-   * Build the device settings from config and current device settings
+   * Build the device settings from per-device config, global config and current device settings
    */
-  private buildDeviceSettings(light: KeyLightInstance): KeyLightSettings {
+  private buildDeviceSettings(light: KeyLightInstance, deviceConfig?: DeviceConfig): KeyLightSettings {
     const currentSettings = light.settings;
 
-    // Convert Kelvin to mirek if powerOnTemperature is provided in Kelvin
-    const powerOnTemperature = this.config.powerOnTemperature
-      ? Math.round(KELVIN_TO_MIREK_FACTOR / this.config.powerOnTemperature)
+    // Per-device temperature (Kelvin) wins over global (Kelvin); both convert to mirek
+    const configuredKelvin = deviceConfig?.powerOnTemperature ?? this.config.powerOnTemperature;
+    const powerOnTemperature = configuredKelvin
+      ? Math.round(KELVIN_TO_MIREK_FACTOR / configuredKelvin)
       : currentSettings?.powerOnTemperature ?? DEFAULT_DEVICE_SETTINGS.POWER_ON_TEMPERATURE;
 
+    // Per-device powerOnBehavior of 0 means "use global setting"
+    const devicePowerOnBehavior = deviceConfig?.powerOnBehavior || undefined;
+
     return {
-      powerOnBehavior: this.config.powerOnBehavior
+      powerOnBehavior: devicePowerOnBehavior
+        ?? this.config.powerOnBehavior
         ?? currentSettings?.powerOnBehavior
         ?? DEFAULT_DEVICE_SETTINGS.POWER_ON_BEHAVIOR,
-      powerOnBrightness: this.config.powerOnBrightness
+      powerOnBrightness: deviceConfig?.powerOnBrightness
+        ?? this.config.powerOnBrightness
         ?? currentSettings?.powerOnBrightness
         ?? DEFAULT_DEVICE_SETTINGS.POWER_ON_BRIGHTNESS,
       powerOnTemperature,
@@ -180,17 +245,19 @@ export class KeyLightsPlatform implements DynamicPlatformPlugin {
    * This method handles the creation of the HomeKit accessory from a KeyLightInstance
    */
   private configureDevice(light: KeyLightInstance): void {
+    // Look up custom device configuration; the config UI writes displayName as an
+    // empty string when unset, which must not be used as an accessory name
+    const deviceConfig = this.getDeviceConfig(light.mac);
+    const customDisplayName = deviceConfig?.displayName?.trim() || undefined;
+
     // Update the device settings
-    const settings = this.buildDeviceSettings(light);
+    const settings = this.buildDeviceSettings(light, deviceConfig);
     light.updateSettings(settings);
 
     // Generate a unique id for the accessory from the serial number
     const uuid = this.api.hap.uuid.generate(light.serialNumber);
     this.log.debug('UUID for', light.name, 'is', uuid);
-
-    // Look up custom device configuration
-    const deviceConfig = this.getDeviceConfig(light.mac);
-    const customName = deviceConfig?.displayName ?? light.displayName;
+    const customName = customDisplayName ?? light.displayName;
 
     // See if an accessory with the same uuid has already been registered and restored from
     // the cached devices we stored in the configureAccessory method above
@@ -209,7 +276,7 @@ export class KeyLightsPlatform implements DynamicPlatformPlugin {
       this.log.info('Restoring existing accessory from cache:', light.name, 'as', customName);
 
       // Update accessory display name if custom name is configured
-      if (deviceConfig?.displayName) {
+      if (customDisplayName) {
         accessory.displayName = customName;
       }
 
@@ -258,7 +325,7 @@ export class KeyLightsPlatform implements DynamicPlatformPlugin {
       return undefined;
     }
     return devices.find((d) =>
-      d.mac.toLowerCase() === mac.toLowerCase(),
+      d.mac?.toLowerCase() === mac.toLowerCase(),
     );
   }
 }
