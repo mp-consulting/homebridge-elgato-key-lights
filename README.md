@@ -16,7 +16,7 @@ A [Homebridge](https://homebridge.io) plugin for controlling [Elgato Key Light](
 
 ## Requirements
 
-- Node.js v20 or later
+- Node.js v22 or later
 - Homebridge v1.8.0 or later
 
 ## Installation

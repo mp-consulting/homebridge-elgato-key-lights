@@ -7,7 +7,7 @@ Homebridge plugin (`@mp-consulting/homebridge-elgato-key-lights`) for Elgato Key
 ## Tech Stack
 
 - **Language**: TypeScript (strict, ES2022, ESM via NodeNext)
-- **Runtime**: Node.js ^20 || ^22 || ^24, Homebridge ^1.8.0 || ^2.0.0-beta
+- **Runtime**: Node.js ^22 || ^24 || ^26, Homebridge ^1.8.0 || ^2.0.0-beta
 - **Testing**: Vitest with UI and coverage
 - **Linting**: ESLint 9 flat config with typescript-eslint
 - **Key deps**: `axios` (HTTP), `bonjour-service` (mDNS discovery), `homebridge-lib`
