@@ -1,7 +1,7 @@
 {
   "displayName": "Elgato Key Lights",
   "name": "@mp-consulting/homebridge-elgato-key-lights",
-  "version": "1.0.25",
+  "version": "1.0.26",
   "description": "A Homebridge plugin for Elgato Key Light and Key Light Air",
   "author": "MP Consulting",
   "license": "MIT",
@@ -25,8 +25,8 @@
   "scripts": {
     "lint": "eslint . --max-warnings=0",
     "watch": "npm run build && npm link && nodemon",
-    "copy:ui-kit": "mkdir -p homebridge-ui/public/lib && cp node_modules/@mp-consulting/homebridge-ui-kit/dist/kit.css homebridge-ui/public/lib/ && cp node_modules/@mp-consulting/homebridge-ui-kit/dist/kit.js homebridge-ui/public/lib/",
-    "build": "npm run copy:ui-kit && rimraf ./dist && tsc",
+    "copy:ui-assets": "mkdir -p homebridge-ui/public/lib/fonts && cp node_modules/@mp-consulting/homebridge-ui-kit/dist/kit.css node_modules/@mp-consulting/homebridge-ui-kit/dist/kit.js homebridge-ui/public/lib/ && cp node_modules/bootstrap/dist/css/bootstrap.min.css node_modules/bootstrap/dist/js/bootstrap.bundle.min.js homebridge-ui/public/lib/ && cp node_modules/bootstrap-icons/font/bootstrap-icons.min.css homebridge-ui/public/lib/ && cp node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff node_modules/bootstrap-icons/font/fonts/bootstrap-icons.woff2 homebridge-ui/public/lib/fonts/",
+    "build": "npm run copy:ui-assets && rimraf ./dist && tsc",
     "prepublishOnly": "npm run lint && npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -55,6 +55,8 @@
     "@types/node": "^25.9.4",
     "@vitest/coverage-v8": "^4.1.5",
     "@vitest/ui": "^4.1.5",
+    "bootstrap": "^5.3.8",
+    "bootstrap-icons": "^1.13.1",
     "eslint": "^10.6.0",
     "homebridge": "^2.1.0",
     "homebridge-config-ui-x": "^5.24.0",
