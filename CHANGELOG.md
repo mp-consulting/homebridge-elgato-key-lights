@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.27] - 2026-09-10
+
+### Fixed
+
+- **404s in the browser console on every visit to the settings page** ([#55](https://github.com/mp-consulting/homebridge-elgato-key-lights/pull/55)): the vendored minified Bootstrap files kept their trailing `sourceMappingURL` comment, so the browser asked for `bootstrap.min.css.map` and `bootstrap.bundle.min.js.map` and got a 404 for each. The copy step now strips the comment instead of shipping ~920 kB of source maps.
+
+### Changed
+
+- **Dependencies**: Updated all dependencies to latest compatible versions, including `axios` ^1.20.0, `homebridge-lib` ^8.1.5, `bonjour-service` ^1.4.4 and `@homebridge/plugin-ui-utils` ^2.2.6, plus dev-only major bumps for `vitest` (4→5) and `@types/node` (25→26).
+
 ## [1.0.26] - 2026-08-09
 
 ### Fixed
