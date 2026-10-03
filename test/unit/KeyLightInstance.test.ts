@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
-import { KeyLightInstance } from '../../src/devices/KeyLightInstance.js';
+import { KeyLightInstance, normalizePollingRate } from '../../src/devices/KeyLightInstance.js';
 import { createMockLogger } from '../mocks/homebridge.js';
 import {
   createKeyLight,
@@ -25,13 +25,13 @@ describe('KeyLightInstance', () => {
 
     mockedAxios.get.mockImplementation((url: string) => {
       if (url.includes('accessory-info')) {
-        return Promise.resolve(createAxiosResponse(mockInfo));
+        return Promise.resolve(createAxiosResponse(structuredClone(mockInfo)));
       }
       if (url.includes('lights/settings')) {
-        return Promise.resolve(createAxiosResponse(mockSettings));
+        return Promise.resolve(createAxiosResponse(structuredClone(mockSettings)));
       }
       if (url.includes('lights')) {
-        return Promise.resolve(createAxiosResponse(mockOptions));
+        return Promise.resolve(createAxiosResponse(structuredClone(mockOptions)));
       }
       return Promise.reject(new Error(`Unexpected URL: ${url}`));
     });
@@ -112,10 +112,10 @@ describe('KeyLightInstance', () => {
           return Promise.resolve(createAxiosResponse({ ...mockInfo, displayName: '' }));
         }
         if (url.includes('lights/settings')) {
-          return Promise.resolve(createAxiosResponse(mockSettings));
+          return Promise.resolve(createAxiosResponse(structuredClone(mockSettings)));
         }
         if (url.includes('lights')) {
-          return Promise.resolve(createAxiosResponse(mockOptions));
+          return Promise.resolve(createAxiosResponse(structuredClone(mockOptions)));
         }
         return Promise.reject(new Error(`Unexpected URL: ${url}`));
       });
@@ -183,6 +183,7 @@ describe('KeyLightInstance', () => {
       expect(mockedAxios.put).toHaveBeenCalledWith(
         instance.lightsEndpoint,
         { lights: [{ brightness: 75 }] },
+        { timeout: 5000 },
       );
     });
 
@@ -192,6 +193,7 @@ describe('KeyLightInstance', () => {
       expect(mockedAxios.put).toHaveBeenCalledWith(
         instance.lightsEndpoint,
         { lights: [{ on: 1 }] },
+        { timeout: 5000 },
       );
     });
 
@@ -201,7 +203,46 @@ describe('KeyLightInstance', () => {
       expect(mockedAxios.put).toHaveBeenCalledWith(
         instance.lightsEndpoint,
         { lights: [{ temperature: 250 }] },
+        { timeout: 5000 },
       );
+    });
+  });
+
+  describe('setProperty state sync', () => {
+    let instance: KeyLightInstance;
+
+    beforeEach(async () => {
+      instance = await KeyLightInstance.createInstance(mockKeyLight, mockLogger);
+    });
+
+    afterEach(() => {
+      instance.stopPolling();
+    });
+
+    it('updates the cached state after a successful write', async () => {
+      await instance.setProperty('brightness', 80);
+
+      expect(instance.getProperty('brightness')).toBe(80);
+    });
+
+    it('does not echo its own write back to HomeKit on the next poll', async () => {
+      const callback = vi.fn();
+      instance.onPropertyChanged = callback;
+      await instance.setProperty('brightness', 80);
+
+      mockedAxios.get.mockResolvedValue(createAxiosResponse(createKeyLightOptions({
+        lights: [{ on: 1, brightness: 80, temperature: 200 }],
+      })));
+      await vi.advanceTimersByTimeAsync(1000);
+
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it('leaves the cached state untouched when the write fails', async () => {
+      mockedAxios.put.mockRejectedValueOnce(new Error('timeout'));
+
+      await expect(instance.setProperty('brightness', 80)).rejects.toThrow('timeout');
+      expect(instance.getProperty('brightness')).toBe(mockOptions.lights[0].brightness);
     });
   });
 
@@ -243,7 +284,7 @@ describe('KeyLightInstance', () => {
     it('should send POST request to identify endpoint', async () => {
       await instance.identify();
 
-      expect(mockedAxios.post).toHaveBeenCalledWith(instance.identifyEndpoint);
+      expect(mockedAxios.post).toHaveBeenCalledWith(instance.identifyEndpoint, undefined, { timeout: 5000 });
       expect(mockLogger.debug).toHaveBeenCalledWith(
         expect.stringContaining('Identify triggered'),
       );
@@ -276,7 +317,7 @@ describe('KeyLightInstance', () => {
 
       await instance.updateSettings(newSettings);
 
-      expect(mockedAxios.put).toHaveBeenCalledWith(instance.settingsEndpoint, newSettings);
+      expect(mockedAxios.put).toHaveBeenCalledWith(instance.settingsEndpoint, newSettings, { timeout: 5000 });
       expect(mockLogger.debug).toHaveBeenCalledWith(
         expect.stringContaining('Updated device settings'),
       );
@@ -355,6 +396,57 @@ describe('KeyLightInstance', () => {
       );
     });
 
+    it('should not start a new poll while the previous one is still pending', async () => {
+      mockedAxios.get.mockClear();
+      mockedAxios.get.mockImplementation(() => new Promise(() => {}));
+
+      await vi.advanceTimersByTimeAsync(5000);
+
+      expect(mockedAxios.get).toHaveBeenCalledTimes(1);
+    });
+
+    it('should report the light unreachable after consecutive failures and recover', async () => {
+      mockedAxios.get.mockRejectedValue(new Error('Network error'));
+
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(instance.reachable).toBe(true);
+
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(instance.reachable).toBe(false);
+      expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('not responding'));
+
+      mockedAxios.get.mockResolvedValue(createAxiosResponse(createKeyLightOptions()));
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(instance.reachable).toBe(true);
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('responding again'));
+    });
+
+    it('should notify reachability changes only on transitions', async () => {
+      const callback = vi.fn();
+      instance.onReachabilityChanged = callback;
+      mockedAxios.get.mockRejectedValue(new Error('Network error'));
+
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenLastCalledWith(false);
+
+      mockedAxios.get.mockResolvedValue(createAxiosResponse(createKeyLightOptions()));
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(callback).toHaveBeenCalledTimes(2);
+      expect(callback).toHaveBeenLastCalledWith(true);
+    });
+
+    it('should ignore malformed poll responses', async () => {
+      const callback = vi.fn();
+      instance.onPropertyChanged = callback;
+      mockedAxios.get.mockResolvedValue(createAxiosResponse({}));
+
+      await vi.advanceTimersByTimeAsync(1000);
+
+      expect(callback).not.toHaveBeenCalled();
+      expect(instance.getProperty('brightness')).toBe(mockOptions.lights[0].brightness);
+    });
+
     it('should stop polling when stopPolling is called', async () => {
       instance.stopPolling();
 
@@ -362,6 +454,49 @@ describe('KeyLightInstance', () => {
       await vi.advanceTimersByTimeAsync(5000);
 
       expect(mockedAxios.get.mock.calls.length).toBe(callCount);
+    });
+  });
+
+  describe('connection handling', () => {
+    it('brackets IPv6 hosts in endpoint URLs', async () => {
+      const instance = await KeyLightInstance.createInstance(createKeyLight({ hostname: 'fe80::1' }), mockLogger);
+      instance.stopPolling();
+
+      expect(instance.lightsEndpoint).toBe('http://[fe80::1]:9123/elgato/lights');
+    });
+
+    it('updates hostname and port from new connection data', async () => {
+      const instance = await KeyLightInstance.createInstance(mockKeyLight, mockLogger);
+      instance.stopPolling();
+
+      instance.updateConnectionData(createKeyLight({ hostname: '192.168.1.200', port: 9124 }));
+
+      expect(instance.infoEndpoint).toBe('http://192.168.1.200:9124/elgato/accessory-info');
+    });
+
+    it('applies a request timeout to initialization requests', async () => {
+      const instance = await KeyLightInstance.createInstance(mockKeyLight, mockLogger);
+      instance.stopPolling();
+
+      expect(mockedAxios.get).toHaveBeenCalledTimes(3);
+      for (const call of mockedAxios.get.mock.calls) {
+        expect(call[1]).toEqual({ timeout: 5000 });
+      }
+    });
+  });
+
+  describe('normalizePollingRate', () => {
+    it.each([
+      [undefined, 1000],
+      ['500', 1000],
+      [Number.NaN, 1000],
+      [0, 250],
+      [-10, 250],
+      [100, 250],
+      [2000, 2000],
+      [1500.7, 1501],
+    ])('normalizes %s to %s', (input, expected) => {
+      expect(normalizePollingRate(input)).toBe(expected);
     });
   });
 });

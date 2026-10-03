@@ -2,14 +2,12 @@ import type {
   Service,
   PlatformAccessory,
   CharacteristicValue,
-  CharacteristicSetCallback,
-  CharacteristicGetCallback,
 } from 'homebridge';
 
 import type { KeyLightsPlatform } from '../platform/KeyLightsPlatform.js';
 import type { KeyLightInstance } from '../devices/KeyLightInstance.js';
 import { COLOR_TEMPERATURE, clampColorTemperature } from '../config/constants.js';
-import type { KeyLight, LightProperty } from '../types/index.js';
+import type { LightProperty } from '../types/index.js';
 
 /**
  * Platform Accessory for the Key Light.
@@ -24,42 +22,41 @@ export class KeyLightsAccessory {
     private readonly light: KeyLightInstance,
     private readonly displayName: string = light.displayName,
   ) {
+    const { Characteristic, Service } = this.platform;
+
     // Set accessory information
-    this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, this.light.manufacturer)
-      .setCharacteristic(this.platform.Characteristic.Model, this.light.model)
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, this.light.serialNumber)
-      .setCharacteristic(this.platform.Characteristic.FirmwareRevision, this.light.firmwareVersion);
+    this.accessory.getService(Service.AccessoryInformation)!
+      .setCharacteristic(Characteristic.Manufacturer, this.light.manufacturer)
+      .setCharacteristic(Characteristic.Model, this.light.model)
+      .setCharacteristic(Characteristic.SerialNumber, this.light.serialNumber)
+      .setCharacteristic(Characteristic.FirmwareRevision, this.light.firmwareVersion);
 
     this.light.onPropertyChanged = this.onPropertyChanged.bind(this);
 
     // Get the LightBulb service if it exists, otherwise create a new LightBulb service
-    this.service = this.accessory.getService(this.platform.Service.Lightbulb)
-      ?? this.accessory.addService(this.platform.Service.Lightbulb);
+    this.service = this.accessory.getService(Service.Lightbulb)
+      ?? this.accessory.addService(Service.Lightbulb);
 
     // Set the service name, this is what is displayed as the default name on the Home app
-    this.service.setCharacteristic(this.platform.Characteristic.Name, this.displayName);
+    this.service.setCharacteristic(Characteristic.Name, this.displayName);
 
     // Set ConfiguredName for better HomeKit display
-    this.service.addOptionalCharacteristic(this.platform.Characteristic.ConfiguredName);
-    this.service.updateCharacteristic(this.platform.Characteristic.ConfiguredName, this.displayName);
+    this.service.addOptionalCharacteristic(Characteristic.ConfiguredName);
+    this.service.updateCharacteristic(Characteristic.ConfiguredName, this.displayName);
 
-    // Register handlers for the On/Off Characteristic
-    this.service.getCharacteristic(this.platform.Characteristic.On)
-      .on('set', this.setOn.bind(this))
-      .on('get', this.getOn.bind(this));
+    this.service.getCharacteristic(Characteristic.On)
+      .onSet((value) => this.setProperty('on', 'On', value ? 1 : 0))
+      .onGet(() => this.getProperty('on') === 1);
 
-    // Register handlers for the Brightness Characteristic
-    this.service.getCharacteristic(this.platform.Characteristic.Brightness)
-      .on('set', this.setBrightness.bind(this))
-      .on('get', this.getBrightness.bind(this));
+    this.service.getCharacteristic(Characteristic.Brightness)
+      .onSet((value) => this.setProperty('brightness', 'Brightness', value))
+      .onGet(() => this.getProperty('brightness'));
 
-    // Register handlers for the Color Temperature Characteristic and set the valid value range.
     // The current device value must be set before narrowing the range: the HAP default
     // (140 mirek) is outside our valid range and setProps warns on out-of-range values.
-    this.service.getCharacteristic(this.platform.Characteristic.ColorTemperature)
-      .on('set', this.setColorTemperature.bind(this))
-      .on('get', this.getColorTemperature.bind(this))
+    this.service.getCharacteristic(Characteristic.ColorTemperature)
+      .onSet((value) => this.setProperty('temperature', 'Color Temperature', value))
+      .onGet(() => this.getProperty('temperature'))
       .updateValue(this.light.getProperty('temperature'))
       .setProps({
         validValueRanges: [COLOR_TEMPERATURE.MIN_MIREK, COLOR_TEMPERATURE.MAX_MIREK],
@@ -67,77 +64,38 @@ export class KeyLightsAccessory {
 
     // Register handler for Identify functionality
     this.accessory.on('identify', () => {
-      this.light.identify();
+      void this.light.identify();
     });
   }
 
   /**
-   * Helper method to set a characteristic property with consistent error handling
+   * Send a property to the light, reporting a communication failure to HomeKit on error
    */
-  private setCharacteristicProperty(
-    property: LightProperty,
-    characteristicName: string,
-    value: CharacteristicValue,
-    callback: CharacteristicSetCallback,
-  ): void {
-    this.light.setProperty(property, value)
-      .then(() => {
-        this.platform.log.debug(
-          `Set Characteristic ${characteristicName} -> ${value} successfully on ${this.accessory.displayName}`,
-        );
-        callback(null);
-      })
-      .catch((error: unknown) => {
-        this.platform.log.error(
-          `Set Characteristic ${characteristicName} -> ${value} failed on ${this.accessory.displayName}`,
-        );
-        this.platform.log.debug(String(error));
-        callback(new Error(`Failed to set ${characteristicName}`));
-      });
+  private async setProperty(property: LightProperty, characteristicName: string, value: CharacteristicValue): Promise<void> {
+    try {
+      await this.light.setProperty(property, value);
+      this.platform.log.debug(`Set Characteristic ${characteristicName} -> ${value} successfully on ${this.accessory.displayName}`);
+    } catch (error) {
+      this.platform.log.error(`Set Characteristic ${characteristicName} -> ${value} failed on ${this.accessory.displayName}`);
+      this.platform.log.debug(String(error));
+      throw this.communicationFailure();
+    }
   }
 
   /**
-   * Handler for setting the On/Off state
+   * Read a cached property; reports "No Response" while the light is unreachable
+   * instead of serving stale values
    */
-  private setOn(value: CharacteristicValue, callback: CharacteristicSetCallback): void {
-    const numericValue = value ? 1 : 0;
-    this.setCharacteristicProperty('on', 'On', numericValue, callback);
+  private getProperty(property: LightProperty): number {
+    if (!this.light.reachable) {
+      throw this.communicationFailure();
+    }
+    return this.light.getProperty(property);
   }
 
-  /**
-   * Handler for getting the On/Off state
-   */
-  private getOn(callback: CharacteristicGetCallback): void {
-    callback(null, this.light.options?.lights[0].on);
-  }
-
-  /**
-   * Handler for setting the brightness
-   */
-  private setBrightness(value: CharacteristicValue, callback: CharacteristicSetCallback): void {
-    this.setCharacteristicProperty('brightness', 'Brightness', value, callback);
-  }
-
-  /**
-   * Handler for getting the brightness
-   */
-  private getBrightness(callback: CharacteristicGetCallback): void {
-    callback(null, this.light.getProperty('brightness'));
-  }
-
-  /**
-   * Handler for setting the color temperature
-   */
-  private setColorTemperature(value: CharacteristicValue, callback: CharacteristicSetCallback): void {
-    this.setCharacteristicProperty('temperature', 'Color Temperature', value, callback);
-  }
-
-  /**
-   * Handler for getting the color temperature
-   */
-  private getColorTemperature(callback: CharacteristicGetCallback): void {
-    const temp = this.light.getProperty('temperature');
-    callback(null, clampColorTemperature(temp));
+  private communicationFailure(): Error {
+    const { HapStatusError, HAPStatus } = this.platform.api.hap;
+    return new HapStatusError(HAPStatus.SERVICE_COMMUNICATION_FAILURE);
   }
 
   /**
@@ -150,7 +108,7 @@ export class KeyLightsAccessory {
 
     switch (property) {
       case 'on':
-        this.service.updateCharacteristic(this.platform.Characteristic.On, value);
+        this.service.updateCharacteristic(this.platform.Characteristic.On, value === 1);
         break;
       case 'temperature':
         this.service.updateCharacteristic(
@@ -162,14 +120,5 @@ export class KeyLightsAccessory {
         this.service.updateCharacteristic(this.platform.Characteristic.Brightness, value);
         break;
     }
-  }
-
-  /**
-   * Update the connection information.
-   * Called from platform handler when the light gets a new IP address.
-   */
-  public updateConnectionData(data: KeyLight): void {
-    this.light.hostname = data.hostname;
-    this.light.port = data.port;
   }
 }

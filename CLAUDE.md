@@ -10,7 +10,7 @@ Homebridge plugin (`@mp-consulting/homebridge-elgato-key-lights`) for Elgato Key
 - **Runtime**: Node.js ^22 || ^24 || ^26, Homebridge ^1.8.0 || ^2.0.0-beta
 - **Testing**: Vitest with UI and coverage
 - **Linting**: ESLint 9 flat config with typescript-eslint
-- **Key deps**: `axios` (HTTP), `bonjour-service` (mDNS discovery), `homebridge-lib`
+- **Key deps**: `axios` (HTTP), `bonjour-service` (mDNS discovery), `@homebridge/plugin-ui-utils` (config UI server)
 
 ## Commands
 
@@ -49,7 +49,7 @@ homebridge-ui/                  # Custom config UI
 ## Architecture
 
 - **DynamicPlatformPlugin** with mDNS-based auto-discovery (`elg` service type)
-- **DeviceCatalog** tracks device states (online, offline, initializing, error)
+- **DeviceCatalog** tracks device states (online, offline, initializing, error); online/offline follows each instance's polling reachability
 - **Polling-based sync** with configurable interval (default 1000ms)
 - **Mirek/Kelvin conversion** for HomeKit color temperature (143-344 mirek)
 - **Per-device config** overrides via MAC address matching

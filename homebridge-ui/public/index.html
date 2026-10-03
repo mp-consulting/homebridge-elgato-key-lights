@@ -36,36 +36,39 @@
       </div>
 
       <div class="card border-0 shadow-sm mt-4">
-        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
-          <h5 class="mb-0">
+        <div class="card-header bg-transparent border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+          <h5 class="mb-0 text-nowrap">
             <i class="bi bi-broadcast me-2"></i>Devices
           </h5>
           <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary btn-sm" id="addManualBtn" onclick="toggleManualAdd()">
-              <i class="bi bi-plus me-1"></i>Add manually
+            <!-- text-nowrap keeps icon and label on one line on narrow screens -->
+            <button class="btn btn-outline-secondary btn-sm text-nowrap" id="addManualBtn" onclick="toggleManualAdd()">
+              <i class="bi bi-plus me-1"></i>Add<span class="d-none d-sm-inline"> manually</span>
             </button>
-            <button class="btn btn-primary" id="discoverBtn" onclick="discoverDevices()">
+            <button class="btn btn-primary btn-sm text-nowrap" id="discoverBtn" onclick="discoverDevices()">
               <i class="bi bi-search me-1"></i> Discover
             </button>
           </div>
         </div>
         <div id="manualAddForm" class="d-none border-bottom px-3 py-3">
+          <!-- Phones: IP on its own row, then port and the buttons; wider screens: one row -->
           <div class="row g-2 align-items-end">
-            <div class="col">
-              <label class="form-label small mb-1">IP Address</label>
+            <div class="col-12 col-sm">
+              <label class="form-label small mb-1" for="manualIp">IP Address</label>
               <input type="text" class="form-control form-control-sm" id="manualIp" placeholder="192.168.3.108"
+                autocapitalize="off" autocorrect="off" spellcheck="false"
                 onkeydown="if(event.key==='Enter') addDeviceByIp()">
             </div>
-            <div class="col-auto">
-              <label class="form-label small mb-1">Port</label>
-              <input type="number" class="form-control form-control-sm" id="manualPort" value="9123" style="width: 90px;"
+            <div class="col-4 col-sm-auto">
+              <label class="form-label small mb-1" for="manualPort">Port</label>
+              <input type="number" class="form-control form-control-sm manual-port" id="manualPort" value="9123" inputmode="numeric"
                 onkeydown="if(event.key==='Enter') addDeviceByIp()">
             </div>
-            <div class="col-auto">
-              <button class="btn btn-primary btn-sm" id="addManualSubmit" onclick="addDeviceByIp()">
+            <div class="col-8 col-sm-auto d-flex gap-2">
+              <button class="btn btn-primary btn-sm flex-fill text-nowrap" id="addManualSubmit" onclick="addDeviceByIp()">
                 <i class="bi bi-plus-circle me-1"></i>Add
               </button>
-              <button class="btn btn-outline-secondary btn-sm ms-1" onclick="toggleManualAdd()">
+              <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="toggleManualAdd()">
                 Cancel
               </button>
             </div>
@@ -89,16 +92,16 @@
 
     <!-- Device Settings View -->
     <div id="settingsView" class="mp-view">
-      <div class="d-flex align-items-center gap-3 mb-4">
-        <button class="btn btn-link text-body-secondary p-0" onclick="showListView()">
+      <div class="d-flex align-items-center gap-2 gap-sm-3 mb-4">
+        <button class="btn btn-link text-body-secondary p-0 btn-touch" onclick="showListView()" aria-label="Back to devices">
           <i class="bi bi-arrow-left fs-4"></i>
         </button>
-        <span class="mp-header-icon text-warning"><i class="bi bi-lightbulb-fill"></i></span>
-        <div class="flex-grow-1">
-          <h1 class="mp-header-title" id="settingsDeviceName">Device Settings</h1>
-          <p class="mp-header-subtitle" id="settingsDeviceModel">Key Light</p>
+        <span class="mp-header-icon text-warning d-none d-sm-inline"><i class="bi bi-lightbulb-fill"></i></span>
+        <div class="flex-grow-1 min-w-0">
+          <h1 class="mp-header-title detail-title" id="settingsDeviceName">Device Settings</h1>
+          <p class="mp-header-subtitle text-truncate" id="settingsDeviceModel">Key Light</p>
         </div>
-        <div id="settingsDeviceStatus"></div>
+        <div id="settingsDeviceStatus" class="flex-shrink-0"></div>
       </div>
 
       <div id="settingsContent">

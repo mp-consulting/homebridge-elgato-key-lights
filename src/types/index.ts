@@ -8,6 +8,9 @@ export type LightProperty = 'brightness' | 'on' | 'temperature';
 /** Callback type for property change notifications */
 export type PropertyChangedCallback = (property: LightProperty, value: number) => void;
 
+/** Callback type for reachability change notifications */
+export type ReachabilityChangedCallback = (reachable: boolean) => void;
+
 /** Represents the current state of a device in the catalog */
 export type DeviceState = 'discovered' | 'initializing' | 'online' | 'offline' | 'error';
 

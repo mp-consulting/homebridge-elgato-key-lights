@@ -1,5 +1,38 @@
 # Changelog
 
+## [Unreleased]
+
+### Security
+
+- **Config UI escaped device-supplied text**: device names, models and info from mDNS announcements and device HTTP responses were interpolated into `innerHTML` unescaped, so anything on the LAN advertising an `_elg._tcp` service could inject script into the Homebridge admin UI. All such values are now escaped.
+- **Config UI server validates device addresses**: `/device/*` requests now only accept a plain IP or hostname and a port in 1–65535 before building the device URL. The unused `/device/settings/update` route, which forwarded an arbitrary body to any host, was removed.
+- **ARP lookups run without a shell** (`execFile` instead of `exec`).
+
+### Fixed
+
+- **Requests to an unresponsive light could hang forever**: initialization, set, settings and identify requests now time out after 5 s, so HomeKit gets an error instead of a stuck "Updating…".
+- **Same light keyed twice when its MAC was written differently** in `config.json` and mDNS (e.g. `3c-6a-…` vs `3C:6A:…`), leading to two pollers and a duplicate accessory registration. MACs are now normalized everywhere.
+- **ARP resolution failed on macOS for MACs with a leading-zero octet**, because `arp -a` prints `3c:6a:9d:4:a:b`.
+- **2900 K power-on temperature** converted to 345 mirek, one above what the light accepts; it is now clamped.
+- **IPv6 addresses** produced invalid URLs; they are now bracketed, and `useIP` prefers an IPv4 address.
+- **Lights without a serial number** all shared one accessory UUID; the MAC is now used as a fallback.
+- **Manually added lights in the config UI were never loaded**, as they were saved without a MAC; the MAC is now taken from the light's `accessory-info`.
+- mDNS services without a device id are ignored instead of colliding under an empty key.
+
+### Changed
+
+- **HomeKit shows "No Response"** after three consecutive failed polls instead of stale values, and the log reports when a light stops and starts responding again.
+- **Polls no longer overlap**: the next poll is scheduled only after the previous one settles. `pollingRate` is clamped to at least 250 ms.
+- Successful writes update the cached state immediately, so reads before the next poll are correct and the poll no longer echoes the change back to HomeKit.
+- Accessories of lights disabled in config are removed from HomeKit at startup.
+- Characteristic handlers use `onGet`/`onSet` instead of the deprecated callback events.
+- **Config UI works on phones**: the Devices toolbar no longer wraps its buttons, the manual-add form stacks the IP field above port and buttons, long device names wrap or clamp to two lines instead of pushing badges and actions aside, the status card no longer breaks "Temperature" mid-word, icon buttons have 44px touch targets, and action buttons span the width on small screens.
+- The device catalog's online/offline state now follows polling reachability; an mDNS re-announcement alone no longer marks a light online. Unused catalog lookup methods were removed.
+
+### Removed
+
+- Unused runtime dependencies `homebridge-lib` and `class-validator`, which were installed for every user but never imported.
+
 ## [1.0.27] - 2026-09-10
 
 ### Fixed

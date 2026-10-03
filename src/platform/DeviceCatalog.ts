@@ -51,13 +51,6 @@ export class DeviceCatalog {
   }
 
   /**
-   * Get the accessory handler for a device
-   */
-  public getAccessory(mac: string): KeyLightsAccessory | undefined {
-    return this.devices.get(mac)?.accessory ?? undefined;
-  }
-
-  /**
    * Get the device instance for a device
    */
   public getInstance(mac: string): KeyLightInstance | undefined {
@@ -128,11 +121,10 @@ export class DeviceCatalog {
         device.hostname = entry.resolvedIp;
         this.log.debug(`[Catalog] Using cached IP ${entry.resolvedIp} for ${device.name}`);
       }
+      // State is left alone: an mDNS announcement does not prove the HTTP API answers,
+      // so only the instance's polling moves a device between online and offline
       entry.device = device;
       entry.lastSeen = new Date();
-      if (entry.state === 'offline') {
-        entry.state = 'online';
-      }
       this.log.debug(`[Catalog] Connection updated: ${device.name}`);
     }
   }
@@ -149,13 +141,6 @@ export class DeviceCatalog {
   }
 
   /**
-   * Get the resolved IP address for a device
-   */
-  public getResolvedIp(mac: string): string | undefined {
-    return this.devices.get(mac)?.resolvedIp;
-  }
-
-  /**
    * Mark a device as having encountered an error during initialization
    */
   public markError(mac: string, reason?: string): void {
@@ -163,6 +148,18 @@ export class DeviceCatalog {
     if (entry) {
       entry.state = 'error';
       this.log.debug(`[Catalog] Error for ${entry.device.name}: ${reason ?? 'unknown'}`);
+    }
+  }
+
+  /**
+   * Mark a device as online again after it stopped responding
+   */
+  public markOnline(mac: string): void {
+    const entry = this.devices.get(mac);
+    if (entry) {
+      entry.state = 'online';
+      entry.lastSeen = new Date();
+      this.log.debug(`[Catalog] Online: ${entry.device.name}`);
     }
   }
 
@@ -175,51 +172,6 @@ export class DeviceCatalog {
       entry.state = 'offline';
       this.log.debug(`[Catalog] Offline: ${entry.device.name}`);
     }
-  }
-
-  /**
-   * Remove a device from the catalog
-   */
-  public remove(mac: string): boolean {
-    const entry = this.devices.get(mac);
-    if (entry) {
-      // Stop polling if instance exists
-      entry.instance?.stopPolling();
-      this.log.debug(`[Catalog] Removed: ${entry.device.name}`);
-      return this.devices.delete(mac);
-    }
-    return false;
-  }
-
-  /**
-   * Get all devices in the catalog
-   */
-  public getAll(): DeviceCatalogEntry[] {
-    return Array.from(this.devices.values());
-  }
-
-  /**
-   * Get all online devices
-   */
-  public getOnlineDevices(): DeviceCatalogEntry[] {
-    return this.getAll().filter(entry => entry.state === 'online');
-  }
-
-  /**
-   * Get count of devices by state
-   */
-  public getStats(): Record<DeviceState, number> {
-    const stats: Record<DeviceState, number> = {
-      discovered: 0,
-      initializing: 0,
-      online: 0,
-      offline: 0,
-      error: 0,
-    };
-    for (const entry of this.devices.values()) {
-      stats[entry.state]++;
-    }
-    return stats;
   }
 
   /**
