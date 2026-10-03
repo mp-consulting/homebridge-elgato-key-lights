@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.30] - 2026-10-03
+
+### Changed
+
+- **Dependabot is enabled.** It opens pull requests for outdated npm dependencies (weekly) and GitHub Actions (monthly), and GitHub now alerts on and fixes vulnerable dependencies. The plugin itself is unchanged.
+
 ## [1.0.29] - 2026-10-03
 
 ### Changed
