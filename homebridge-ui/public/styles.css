@@ -118,3 +118,74 @@ body {
   color: var(--bs-secondary-color);
   margin-top: 4px;
 }
+
+/* ── Responsive layout ────────────────────────────────────── */
+
+/* Lets long names wrap or truncate inside flex rows instead of pushing siblings out */
+.min-w-0 {
+  min-width: 0;
+}
+
+/* 44px minimum touch target for icon-only buttons */
+.btn-touch {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.manual-port {
+  width: 100%;
+}
+
+@media (min-width: 576px) {
+  .manual-port {
+    width: 90px;
+  }
+}
+
+/* Status tab rows: fixed label column wide enough for "Temperature" without breaking it */
+.status-label {
+  flex: 0 0 6.5rem;
+  white-space: nowrap;
+}
+
+.status-value {
+  min-width: 3.75rem;
+  text-align: right;
+}
+
+/* Device name in the settings view: clamp to two lines on phones */
+@media (max-width: 575.98px) {
+  .detail-title {
+    font-size: 1.125rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+
+  .status-label {
+    flex-basis: 5.75rem;
+  }
+
+  .nav-tabs .nav-link {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+    white-space: nowrap;
+  }
+
+  .slider-value {
+    font-size: 1.1rem;
+    min-width: 0;
+  }
+}
+
+/* The kit's hover lift sticks after a tap on touch screens */
+@media (hover: none) {
+  .mp-device-card:hover {
+    transform: none;
+  }
+}

@@ -36,6 +36,8 @@ function createFakeInstance(light: KeyLight) {
     name: light.name,
     mac: light.mac,
     serialNumber: `SN-${light.mac}`,
+    info: { serialNumber: `SN-${light.mac}` },
+    reachable: true,
     displayName: light.name,
     manufacturer: 'Elgato',
     model: 'Elgato Key Light',
@@ -46,6 +48,9 @@ function createFakeInstance(light: KeyLight) {
     getProperty: vi.fn().mockReturnValue(200),
     identify: vi.fn(),
     stopPolling: vi.fn(),
+    updateConnectionData: vi.fn(),
+    onPropertyChanged: undefined,
+    onReachabilityChanged: undefined as ((reachable: boolean) => void) | undefined,
   };
 }
 
@@ -180,6 +185,20 @@ describe('KeyLightsPlatform', () => {
       }));
     });
 
+    it('clamps a 2900K power-on temperature to the range the light accepts', async () => {
+      const { didFinishLaunching } = createPlatform({
+        powerOnTemperature: 2900,
+        devices: [{ name: 'Warm', mac: 'AA:BB:CC:DD:EE:05', ip: '192.168.1.53' }],
+      });
+
+      didFinishLaunching();
+      await flushPromises();
+
+      const instance = await createInstanceMock.mock.results[0].value;
+      // 1e6 / 2900 = 345 mirek, one above the device maximum
+      expect(instance.updateSettings).toHaveBeenCalledWith(expect.objectContaining({ powerOnTemperature: 344 }));
+    });
+
     it('ignores an empty displayName written by the config UI', async () => {
       const { api, log, didFinishLaunching } = createPlatform({
         devices: [{
@@ -303,6 +322,113 @@ describe('KeyLightsPlatform', () => {
       await flushPromises();
 
       expect(createInstanceMock).not.toHaveBeenCalled();
+    });
+
+    it('treats differently formatted MACs from config and mDNS as the same device', async () => {
+      const { platform, api, didFinishLaunching } = createPlatform({
+        devices: [{ name: 'Key Light', mac: '3c-6a-9d-18-f2-35', ip: '192.168.1.60' }],
+      });
+
+      didFinishLaunching();
+      await flushPromises();
+      discover(platform, '3C:6A:9D:18:F2:35');
+      await flushPromises();
+
+      expect(createInstanceMock).toHaveBeenCalledTimes(1);
+      expect(api.registerPlatformAccessories).toHaveBeenCalledTimes(1);
+      expect(platform.catalog.size).toBe(1);
+    });
+
+    it('updates the connection data of an initialized device on rediscovery', async () => {
+      const { platform } = createPlatform({});
+
+      discover(platform, '3C:6A:9D:18:F2:35');
+      await flushPromises();
+      discover(platform, '3C:6A:9D:18:F2:35');
+
+      const instance = platform.catalog.getInstance('3C:6A:9D:18:F2:35');
+      expect(instance?.updateConnectionData).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the catalog state in sync with the light reachability', async () => {
+      const { platform } = createPlatform({});
+
+      discover(platform, '3C:6A:9D:18:F2:35');
+      await flushPromises();
+      const instance = platform.catalog.getInstance('3C:6A:9D:18:F2:35') as unknown as {
+        onReachabilityChanged: (reachable: boolean) => void;
+      };
+
+      instance.onReachabilityChanged(false);
+      expect(platform.catalog.get('3C:6A:9D:18:F2:35')?.state).toBe('offline');
+
+      instance.onReachabilityChanged(true);
+      expect(platform.catalog.get('3C:6A:9D:18:F2:35')?.state).toBe('online');
+    });
+
+    it('ignores services without a device id', async () => {
+      const { platform, log } = createPlatform({});
+
+      discover(platform, '');
+      await flushPromises();
+
+      expect(createInstanceMock).not.toHaveBeenCalled();
+      expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('without a device id'), expect.anything());
+    });
+
+    it('prefers an IPv4 address when useIP is enabled', async () => {
+      const { platform } = createPlatform({ useIP: true });
+
+      (platform as unknown as { handleDiscoveredService: (service: unknown) => void }).handleDiscoveredService({
+        name: 'Key Light',
+        host: 'elgato.local',
+        port: 9123,
+        addresses: ['fe80::1', '192.168.1.60'],
+        txt: { id: '3C:6A:9D:18:F2:35' },
+      });
+
+      expect(createInstanceMock.mock.calls[0][0].hostname).toBe('192.168.1.60');
+    });
+  });
+
+  describe('accessory lifecycle', () => {
+    it('does not register the same accessory twice when a device is configured again', async () => {
+      const { platform, api } = createPlatform({});
+      const configureDevice = (platform as unknown as { configureDevice: (light: unknown) => void }).configureDevice.bind(platform);
+      const instance = createFakeInstance({ hostname: '192.168.1.60', port: 9123, name: 'Key Light', mac: '3C:6A:9D:18:F2:35' });
+
+      configureDevice(instance);
+      configureDevice(instance);
+
+      expect(api.registerPlatformAccessories).toHaveBeenCalledTimes(1);
+      expect(api.updatePlatformAccessories).toHaveBeenCalledTimes(1);
+    });
+
+    it('falls back to the MAC for the accessory UUID when the serial number is missing', async () => {
+      const { platform, api } = createPlatform({});
+      const configureDevice = (platform as unknown as { configureDevice: (light: unknown) => void }).configureDevice.bind(platform);
+      const instance = { ...createFakeInstance({ hostname: '192.168.1.60', port: 9123, name: 'Key Light', mac: '3C:6A:9D:18:F2:35' }), info: {} };
+
+      configureDevice(instance);
+
+      expect(api.hap.uuid.generate).toHaveBeenCalledWith('3C:6A:9D:18:F2:35');
+    });
+
+    it('unregisters cached accessories of devices disabled in config', () => {
+      const { platform, api, didFinishLaunching } = createPlatform({
+        devices: [{ name: 'Key Light', mac: '3c:6a:9d:18:f2:35', ip: '192.168.1.60', enabled: false }],
+      });
+      const disabled = createMockAccessory('uuid-disabled', 'Disabled Light');
+      disabled.context.device = { mac: '3C:6A:9D:18:F2:35' };
+      const active = createMockAccessory('uuid-active', 'Active Light');
+      active.context.device = { mac: 'AA:BB:CC:DD:EE:FF' };
+      platform.configureAccessory(disabled);
+      platform.configureAccessory(active);
+
+      didFinishLaunching();
+
+      expect(api.unregisterPlatformAccessories).toHaveBeenCalledWith(PLUGIN_NAME, PLATFORM_NAME, [disabled]);
+      expect(platform.accessories).toEqual([active]);
     });
   });
 });

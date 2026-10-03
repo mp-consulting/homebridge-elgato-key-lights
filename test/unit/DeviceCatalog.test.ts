@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DeviceCatalog } from '../../src/platform/DeviceCatalog.js';
+import type { KeyLightInstance } from '../../src/devices/KeyLightInstance.js';
 import type { KeyLight } from '../../src/types/index.js';
 import type { Logger } from 'homebridge';
 
@@ -36,19 +37,19 @@ describe('DeviceCatalog', () => {
       catalog.registerDiscovery(testDevice);
       catalog.setResolvedIp(testDevice.mac, '192.168.1.100');
 
-      const resolvedIp = catalog.getResolvedIp(testDevice.mac);
+      const resolvedIp = catalog.get(testDevice.mac)?.resolvedIp;
       expect(resolvedIp).toBe('192.168.1.100');
     });
 
     it('should return undefined for devices without resolved IP', () => {
       catalog.registerDiscovery(testDevice);
 
-      const resolvedIp = catalog.getResolvedIp(testDevice.mac);
+      const resolvedIp = catalog.get(testDevice.mac)?.resolvedIp;
       expect(resolvedIp).toBeUndefined();
     });
 
     it('should return undefined for unknown devices', () => {
-      const resolvedIp = catalog.getResolvedIp('unknown-mac');
+      const resolvedIp = catalog.get('unknown-mac')?.resolvedIp;
       expect(resolvedIp).toBeUndefined();
     });
 
@@ -132,16 +133,34 @@ describe('DeviceCatalog', () => {
       expect(newLastSeen?.getTime()).toBeGreaterThanOrEqual(initialLastSeen?.getTime() ?? 0);
     });
 
-    it('should return correct stats', () => {
+    it('should move a device between online and offline', () => {
       catalog.registerDiscovery(testDevice);
-      catalog.registerDiscovery({ ...testDevice, mac: 'BB:BB:BB:BB:BB:BB', name: 'Device 2' });
 
-      catalog.markInitializing(testDevice.mac);
+      catalog.markOffline(testDevice.mac);
+      expect(catalog.get(testDevice.mac)?.state).toBe('offline');
 
-      const stats = catalog.getStats();
-      expect(stats.discovered).toBe(1);
-      expect(stats.initializing).toBe(1);
-      expect(stats.online).toBe(0);
+      catalog.markOnline(testDevice.mac);
+      expect(catalog.get(testDevice.mac)?.state).toBe('online');
+    });
+
+    it('should not mark an offline device online just because it was rediscovered', () => {
+      catalog.registerDiscovery(testDevice);
+      catalog.markOffline(testDevice.mac);
+
+      catalog.updateConnectionData(testDevice.mac, { ...testDevice });
+
+      expect(catalog.get(testDevice.mac)?.state).toBe('offline');
+    });
+
+    it('should stop polling and clear devices on shutdown', () => {
+      const stopPolling = vi.fn();
+      catalog.registerDiscovery(testDevice);
+      catalog.registerInstance(testDevice.mac, { displayName: 'x', stopPolling } as unknown as KeyLightInstance);
+
+      catalog.shutdown();
+
+      expect(stopPolling).toHaveBeenCalled();
+      expect(catalog.size).toBe(0);
     });
   });
 });

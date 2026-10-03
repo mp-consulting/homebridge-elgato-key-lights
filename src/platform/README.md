@@ -32,7 +32,7 @@ A centralized registry for managing all Key Light devices throughout their lifec
 - Tracks device state: `discovered` → `initializing` → `online` / `offline` / `error`
 - Stores references to device instances and accessory handlers
 - Provides lookup methods by MAC address
-- Manages device lifecycle (registration, updates, removal)
+- Manages device lifecycle (registration, updates)
 - Handles graceful shutdown of all devices
 
 **Key Methods:**
@@ -41,5 +41,6 @@ A centralized registry for managing all Key Light devices throughout their lifec
 - `registerInstance(mac, instance)` - Register an initialized device instance
 - `registerAccessory(mac, accessory)` - Register a HomeKit accessory handler
 - `updateConnectionData(mac, device)` - Update connection info on rediscovery
-- `markOffline(mac)` / `markError(mac)` - Update device state
+- `markOnline(mac)` / `markOffline(mac)` - Follow the instance's reachability (driven by polling)
+- `markError(mac)` - Record a failed initialization
 - `shutdown()` - Stop all devices and clear the catalog

@@ -5,6 +5,8 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+import { buildDeviceUrl } from './validation.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -12,8 +14,6 @@ const DISCOVERY_TIMEOUT_MS = 5000;
 const HTTP_REQUEST_TIMEOUT_MS = 3000;
 const MDNS_SERVICE_TYPE = 'elg';
 const PLUGIN_PLATFORM_NAME = 'ElgatoKeyLights';
-
-const buildDeviceUrl = (host, port, path) => `http://${host}:${port}/elgato/${path}`;
 
 const axiosConfig = { timeout: HTTP_REQUEST_TIMEOUT_MS };
 
@@ -28,7 +28,6 @@ class KeyLightsUiServer extends HomebridgePluginUiServer {
       ['/discover', this.discoverDevices],
       ['/device/info', this.getDeviceInfo],
       ['/device/settings', this.getDeviceSettings],
-      ['/device/settings/update', this.updateDeviceSettings],
       ['/device/identify', this.identifyDevice],
       ['/device/test', this.testConnection],
     ];
@@ -205,13 +204,6 @@ class KeyLightsUiServer extends HomebridgePluginUiServer {
       ]);
       return { data: { lights: lightsResponse.data, settings: settingsResponse.data } };
     }, 'Failed to get device settings');
-  }
-
-  async updateDeviceSettings({ host, port, settings }) {
-    return this.withDeviceRequest(host, port, async (url) => {
-      await axios.put(url('lights/settings'), settings, axiosConfig);
-      return {};
-    }, 'Failed to update device settings');
   }
 
   async identifyDevice({ host, port }) {

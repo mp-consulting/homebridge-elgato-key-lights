@@ -99,10 +99,19 @@ export function createMockAPI(): API {
         SerialNumber: 'SerialNumber',
         FirmwareRevision: 'FirmwareRevision',
         Name: 'Name',
+        ConfiguredName: 'ConfiguredName',
         Identify: 'Identify',
       },
       uuid: {
         generate: vi.fn((id: string) => `uuid-${id}`),
+      },
+      HAPStatus: {
+        SERVICE_COMMUNICATION_FAILURE: -70402,
+      },
+      HapStatusError: class extends Error {
+        constructor(public hapStatus: number) {
+          super(`HAP status ${hapStatus}`);
+        }
       },
     },
     on: vi.fn(),

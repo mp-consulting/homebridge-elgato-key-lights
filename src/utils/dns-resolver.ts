@@ -1,9 +1,12 @@
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 
 import { ARP_TIMEOUT_MS, MAX_IPV4_OCTET } from '../config/constants.js';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+/** Matches a MAC address whose octets may have had leading zeros stripped (macOS `arp -a`) */
+const MAC_TOKEN_REGEX = /\b[0-9a-f]{1,2}(?:[:-][0-9a-f]{1,2}){5}\b/gi;
 
 /**
  * Check if a string is an IPv4 address
@@ -21,34 +24,38 @@ export function isIPv4Address(str: string): boolean {
 }
 
 /**
- * Normalize MAC address to lowercase without separators for comparison
+ * Normalize a MAC address to 12 lowercase hex digits for comparison.
+ * Accepts `:`, `-` or `.` separators, with or without leading zeros per octet.
  */
-function normalizeMacAddress(mac: string): string {
+export function normalizeMacAddress(mac: string): string {
+  const octets = mac.toLowerCase().split(/[:-]/);
+  if (octets.length === 6) {
+    return octets.map(octet => octet.padStart(2, '0')).join('');
+  }
   return mac.toLowerCase().replace(/[:\-.]/g, '');
 }
 
 /**
- * Normalize MAC addresses within a line for comparison
+ * Format a MAC address as uppercase colon-separated octets (e.g. `3C:6A:9D:04:0A:0B`) so that
+ * the same device is keyed identically whether it came from mDNS or config.json.
+ * Values that are not a 6-octet MAC are only upper-cased.
  */
-function normalizeMacInLine(line: string): string {
-  return line.replace(/[:\-.]/g, '');
+export function canonicalMacAddress(mac: string): string {
+  const normalized = normalizeMacAddress(mac.trim());
+  if (!/^[0-9a-f]{12}$/.test(normalized)) {
+    return mac.trim().toUpperCase();
+  }
+  return normalized.toUpperCase().match(/.{2}/g)!.join(':');
 }
 
 /**
- * Get ARP commands to try based on platform
+ * Get ARP commands to try based on platform, as [file, args] pairs run without a shell
  */
-function getArpCommands(): string[] {
-  const platform = process.platform;
-
-  if (platform === 'darwin') {
-    return ['arp -a'];
-  } else if (platform === 'linux') {
-    return ['ip neighbor show', 'arp -a'];
-  } else if (platform === 'win32') {
-    return ['arp -a'];
+function getArpCommands(): Array<[string, string[]]> {
+  if (process.platform === 'linux') {
+    return [['ip', ['neighbor', 'show']], ['arp', ['-a']]];
   }
-
-  return ['arp -a'];
+  return [['arp', ['-a']]];
 }
 
 /**
@@ -58,9 +65,9 @@ function parseArpOutput(output: string, targetMac: string): string | null {
   const lines = output.split('\n');
 
   for (const line of lines) {
-    const normalizedLine = normalizeMacInLine(line.toLowerCase());
+    const macs = line.match(MAC_TOKEN_REGEX) ?? [];
 
-    if (normalizedLine.includes(targetMac)) {
+    if (macs.some(mac => normalizeMacAddress(mac) === targetMac)) {
       // Extract IP address from the line
       // Formats:
       // macOS/Linux arp -a: "hostname (192.168.1.1) at aa:bb:cc:dd:ee:ff"
@@ -85,9 +92,9 @@ async function resolveFromArp(mac: string): Promise<string | null> {
 
   const commands = getArpCommands();
 
-  for (const cmd of commands) {
+  for (const [file, args] of commands) {
     try {
-      const { stdout } = await execAsync(cmd, { timeout: ARP_TIMEOUT_MS });
+      const { stdout } = await execFileAsync(file, args, { timeout: ARP_TIMEOUT_MS });
       const ip = parseArpOutput(stdout, normalizedMac);
       if (ip) {
         return ip;

@@ -30,6 +30,15 @@ export function clampColorTemperature(value: number): number {
 /** Default polling rate in milliseconds */
 export const DEFAULT_POLLING_RATE_MS = 1000;
 
+/** Lowest accepted polling rate; anything below would flood the light with requests */
+export const MIN_POLLING_RATE_MS = 250;
+
+/** Timeout for API requests that are not polls (initialization, set, settings, identify) */
+export const REQUEST_TIMEOUT_MS = 5000;
+
+/** Consecutive failed polls before a light is reported as unreachable */
+export const OFFLINE_POLL_FAILURE_THRESHOLD = 3;
+
 /** Default API port for Elgato lights */
 export const DEFAULT_DEVICE_PORT = 9123;
 

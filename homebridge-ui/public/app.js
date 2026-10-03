@@ -16,6 +16,27 @@ const POWER_ON_BEHAVIOR = {
   USE_DEFAULT: 2,
 };
 
+/**
+ * Escape a value for interpolation into HTML. Device names, models and info come from
+ * mDNS announcements and device HTTP responses, which anyone on the LAN can spoof.
+ */
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Coerce a device-reported value to a finite number for interpolation into HTML/CSS
+ */
+function toNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
 let discoveredDevices = [];
 let configuredDevices = [];
 let currentDeviceIndex = -1;
@@ -101,8 +122,8 @@ function showSettingsView(index) {
 function confirmRemove(index, btn) {
   const container = btn.parentElement;
   container.innerHTML = `
-    <span class="small text-body-secondary me-1">Remove?</span>
-    <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); removeDevice(${index})">Yes</button>
+    <span class="small text-body-secondary me-1 d-none d-sm-inline">Remove?</span>
+    <button class="btn btn-danger btn-sm me-1" onclick="event.stopPropagation(); removeDevice(${index})">Yes</button>
     <button class="btn btn-outline-secondary btn-sm" onclick="event.stopPropagation(); renderDevices(discoveredDevices)">No</button>
   `;
 }
@@ -166,7 +187,9 @@ async function addDeviceByIp() {
 
     const newDevice = {
       name: deviceName,
-      mac: '',
+      // The plugin keys devices by MAC and skips entries without one; current firmware
+      // reports it in accessory-info
+      mac: result.success ? (result.data?.macAddress || '') : '',
       host: ip,
       ip,
       port,
@@ -199,7 +222,7 @@ async function discoverDevices() {
   const btn = document.getElementById('discoverBtn');
 
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-discover me-1" role="status" aria-hidden="true"></span> Scanning network...';
+  btn.innerHTML = '<span class="spinner-border spinner-discover me-1" role="status" aria-hidden="true"></span> Scanning...';
 
   try {
     const discovered = await homebridge.request('/discover');
@@ -331,25 +354,25 @@ function renderDevices(devices) {
         ? MpKit.StatusBadge.offline()
         : MpKit.StatusBadge.online();
     return `
-        <div class="list-group-item mp-device-card d-flex justify-content-between align-items-center py-3 ${isOffline ? 'opacity-50' : ''}" onclick="showSettingsView(${index})">
-          <div class="d-flex align-items-center">
-            <div class="me-3">
+        <div class="list-group-item mp-device-card d-flex justify-content-between align-items-center gap-2 py-3 ${isOffline ? 'opacity-50' : ''}" onclick="showSettingsView(${index})">
+          <div class="d-flex align-items-center min-w-0">
+            <div class="me-2 me-sm-3">
               <i class="bi bi-lightbulb-fill fs-3 ${isOffline ? 'text-secondary' : 'text-warning'}"></i>
             </div>
-            <div>
-              <div class="fw-semibold">
-                ${device.displayName || device.name}
-                ${device.enabled === false ? `<span class="ms-2">${MpKit.StatusBadge.disabled()}</span>` : ''}
-                <span class="ms-2">${statusBadge}</span>
+            <div class="min-w-0">
+              <div class="d-flex flex-wrap align-items-center column-gap-2 row-gap-1">
+                <span class="fw-semibold text-break">${escapeHtml(device.displayName || device.name)}</span>
+                ${device.enabled === false ? MpKit.StatusBadge.disabled() : ''}
+                ${statusBadge}
               </div>
-              <div class="small text-body-secondary">
-                <span class="me-2"><i class="bi bi-box me-1"></i>${device.model || 'Key Light'}</span>
-                <span><i class="bi bi-ethernet me-1"></i>${device.addresses?.[0] || device.ip || device.host || 'Unknown'}</span>
+              <div class="small text-body-secondary d-flex flex-wrap column-gap-3 mt-1">
+                <span class="text-nowrap"><i class="bi bi-box me-1"></i>${escapeHtml(device.model || 'Key Light')}</span>
+                <span class="text-nowrap"><i class="bi bi-ethernet me-1"></i>${escapeHtml(device.addresses?.[0] || device.ip || device.host || 'Unknown')}</span>
               </div>
             </div>
           </div>
-          <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-link text-body-secondary p-1" title="Remove device"
+          <div class="d-flex align-items-center flex-shrink-0">
+            <button class="btn btn-link text-body-secondary p-0 btn-touch" title="Remove device" aria-label="Remove device"
               onclick="event.stopPropagation(); confirmRemove(${index}, this)">
               <i class="bi bi-trash"></i>
             </button>
@@ -407,7 +430,7 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
 
   settingsContent.innerHTML = `
     <!-- Tabs Navigation -->
-    <ul class="nav nav-tabs mb-4" role="tablist">
+    <ul class="nav nav-tabs flex-nowrap mb-4" role="tablist">
       <li class="nav-item" role="presentation">
         <button class="nav-link active" id="status-tab" data-bs-toggle="tab" data-bs-target="#status-pane" type="button" role="tab" aria-controls="status-pane" aria-selected="true">
           <i class="bi bi-activity me-1"></i> Status
@@ -435,7 +458,7 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
               <div class="row g-4 mb-4">
                 <div class="col-12">
                   <div class="d-flex align-items-center gap-3">
-                    <span class="text-body-secondary" style="width: 90px;">Power</span>
+                    <span class="text-body-secondary status-label">Power</span>
                     <div class="fs-5">
                       ${currentState.on
     ? '<span class="badge bg-success"><i class="bi bi-circle-fill me-1"></i>On</span>'
@@ -447,39 +470,39 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
               <div class="row g-4 mb-4">
                 <div class="col-12">
                   <div class="d-flex align-items-center gap-3">
-                    <span class="text-body-secondary" style="width: 90px;">Brightness</span>
+                    <span class="text-body-secondary status-label">Brightness</span>
                     <div class="flex-grow-1">
                       <div class="progress" style="height: 14px; background: linear-gradient(to right, #333 0%, #fff 100%); border-radius: 7px;">
-                        <div class="progress-bar" role="progressbar" style="width: ${currentState.brightness || 0}%; background: transparent; border-right: 3px solid var(--mp-primary);"></div>
+                        <div class="progress-bar" role="progressbar" style="width: ${toNumber(currentState.brightness)}%; background: transparent; border-right: 3px solid var(--mp-primary);"></div>
                       </div>
                     </div>
-                    <span class="fw-bold" style="min-width: 60px; text-align: right;">${currentState.brightness || 0}%</span>
+                    <span class="fw-bold status-value">${toNumber(currentState.brightness)}%</span>
                   </div>
                 </div>
               </div>
               <div class="row g-4">
                 <div class="col-12">
                   <div class="d-flex align-items-center gap-3">
-                    <span class="text-body-secondary" style="width: 90px;">Temperature</span>
+                    <span class="text-body-secondary status-label">Temperature</span>
                     <div class="flex-grow-1">
                       <div class="progress" style="height: 14px; background: linear-gradient(to right, #ff9329 0%, #fff 50%, #9fc5ff 100%); border-radius: 7px;">
-                        <div class="progress-bar" role="progressbar" style="width: ${tempPercent}%; background: transparent; border-right: 3px solid var(--mp-primary);"></div>
+                        <div class="progress-bar" role="progressbar" style="width: ${toNumber(tempPercent)}%; background: transparent; border-right: 3px solid var(--mp-primary);"></div>
                       </div>
                     </div>
-                    <span class="fw-bold" style="min-width: 60px; text-align: right;">${kelvinTemp ? kelvinTemp + 'K' : 'N/A'}</span>
+                    <span class="fw-bold status-value">${kelvinTemp ? toNumber(kelvinTemp) + 'K' : 'N/A'}</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="d-flex gap-2 flex-wrap">
-            <button class="btn btn-outline-secondary" onclick="identifyDevice(${currentDeviceIndex})">
+          <div class="d-flex gap-2 flex-wrap align-items-center">
+            <button class="btn btn-outline-secondary flex-fill flex-sm-grow-0 text-nowrap" onclick="identifyDevice(${currentDeviceIndex})">
               <i class="bi bi-stars me-1"></i> Identify
             </button>
-            <button class="btn btn-outline-secondary" onclick="testConnection(${currentDeviceIndex})">
+            <button class="btn btn-outline-secondary flex-fill flex-sm-grow-0 text-nowrap" onclick="testConnection(${currentDeviceIndex})">
               <i class="bi bi-plug me-1"></i> Test Connection
             </button>
-            <span id="testResult" class="align-self-center ms-2"></span>
+            <span id="testResult" class="ms-sm-2"></span>
           </div>
         ` : `
           <div class="alert alert-secondary">
@@ -505,7 +528,7 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
 
                 <div class="mb-4">
                   <label class="form-label" for="displayName">Display Name</label>
-                  <input type="text" class="form-control" id="displayName" value="${device.displayName || ''}" placeholder="${device.name}">
+                  <input type="text" class="form-control" id="displayName" value="${escapeHtml(device.displayName)}" placeholder="${escapeHtml(device.name)}">
                   <div class="form-text">Custom name to show in HomeKit (leave empty to use device name)</div>
                 </div>
 
@@ -530,11 +553,11 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
                     <label class="form-label mb-0">
                       <i class="bi bi-brightness-high me-2"></i>Brightness
                     </label>
-                    <span class="slider-value" id="brightnessValue">${device.powerOnBrightness || BRIGHTNESS_DEFAULT}%</span>
+                    <span class="slider-value" id="brightnessValue">${toNumber(device.powerOnBrightness, BRIGHTNESS_DEFAULT) || BRIGHTNESS_DEFAULT}%</span>
                   </div>
                   <div class="slider-container">
                     <input type="range" class="brightness-slider" id="powerOnBrightness"
-                      min="${BRIGHTNESS_MIN}" max="${BRIGHTNESS_MAX}" value="${device.powerOnBrightness || BRIGHTNESS_DEFAULT}"
+                      min="${BRIGHTNESS_MIN}" max="${BRIGHTNESS_MAX}" value="${toNumber(device.powerOnBrightness, BRIGHTNESS_DEFAULT) || BRIGHTNESS_DEFAULT}"
                       oninput="updateBrightnessValue(this.value)">
                     <div class="slider-label">
                       <span>${BRIGHTNESS_MIN}%</span>
@@ -549,11 +572,11 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
                     <label class="form-label mb-0">
                       <i class="bi bi-thermometer-half me-2"></i>Color Temperature
                     </label>
-                    <span class="slider-value" id="temperatureValue">${device.powerOnTemperature || TEMPERATURE_DEFAULT}K</span>
+                    <span class="slider-value" id="temperatureValue">${toNumber(device.powerOnTemperature, TEMPERATURE_DEFAULT) || TEMPERATURE_DEFAULT}K</span>
                   </div>
                   <div class="slider-container">
                     <input type="range" class="temperature-slider" id="powerOnTemperature"
-                      min="${TEMPERATURE_MIN}" max="${TEMPERATURE_MAX}" step="${TEMPERATURE_STEP}" value="${device.powerOnTemperature || TEMPERATURE_DEFAULT}"
+                      min="${TEMPERATURE_MIN}" max="${TEMPERATURE_MAX}" step="${TEMPERATURE_STEP}" value="${toNumber(device.powerOnTemperature, TEMPERATURE_DEFAULT) || TEMPERATURE_DEFAULT}"
                       oninput="updateTemperatureValue(this.value)">
                     <div class="slider-label">
                       <span>${TEMPERATURE_MIN}K (Warm)</span>
@@ -567,9 +590,9 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
           </div>
         </div>
 
-        <div class="d-flex justify-content-end gap-2">
-          <button class="btn btn-secondary" onclick="showListView()">Cancel</button>
-          <button class="btn btn-primary" onclick="saveDeviceSettings(${currentDeviceIndex})">
+        <div class="d-flex justify-content-sm-end gap-2">
+          <button class="btn btn-secondary flex-fill flex-sm-grow-0" onclick="showListView()">Cancel</button>
+          <button class="btn btn-primary flex-fill flex-sm-grow-0 text-nowrap" onclick="saveDeviceSettings(${currentDeviceIndex})">
             <i class="bi bi-check-lg me-1"></i> Save Settings
           </button>
         </div>
@@ -582,27 +605,27 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="mp-label mb-1">Product</label>
-                <div class="fw-medium">${deviceInfo?.productName || device.model || 'Elgato Key Light'}</div>
+                <div class="fw-medium">${escapeHtml(deviceInfo?.productName || device.model || 'Elgato Key Light')}</div>
               </div>
               <div class="col-md-6">
                 <label class="mp-label mb-1">Serial Number</label>
-                <div class="fw-medium font-monospace">${deviceInfo?.serialNumber || 'Unknown'}</div>
+                <div class="fw-medium font-monospace">${escapeHtml(deviceInfo?.serialNumber || 'Unknown')}</div>
               </div>
               <div class="col-md-6">
                 <label class="mp-label mb-1">Firmware Version</label>
-                <div class="fw-medium">${deviceInfo?.firmwareVersion || 'Unknown'}</div>
+                <div class="fw-medium">${escapeHtml(deviceInfo?.firmwareVersion || 'Unknown')}</div>
               </div>
               <div class="col-md-6">
                 <label class="mp-label mb-1">MAC Address</label>
-                <div class="fw-medium font-monospace">${device.mac || 'Unknown'}</div>
+                <div class="fw-medium font-monospace">${escapeHtml(device.mac || 'Unknown')}</div>
               </div>
               <div class="col-md-6">
                 <label class="mp-label mb-1">IP Address</label>
-                <div class="fw-medium font-monospace">${host || 'Unknown'}</div>
+                <div class="fw-medium font-monospace">${escapeHtml(host || 'Unknown')}</div>
               </div>
               <div class="col-md-6">
                 <label class="mp-label mb-1">Port</label>
-                <div class="fw-medium">${device.port || ELGATO_DEFAULT_PORT}</div>
+                <div class="fw-medium">${toNumber(device.port, ELGATO_DEFAULT_PORT) || ELGATO_DEFAULT_PORT}</div>
               </div>
             </div>
           </div>
@@ -673,12 +696,12 @@ async function testConnection(index) {
   try {
     const result = await homebridge.request('/device/test', { host, port: device.port || ELGATO_DEFAULT_PORT });
     if (result.success) {
-      resultSpan.innerHTML = `<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Connected (${result.latency}ms)</span>`;
+      resultSpan.innerHTML = `<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Connected (${toNumber(result.latency)}ms)</span>`;
     } else {
-      resultSpan.innerHTML = `<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>${result.error}</span>`;
+      resultSpan.innerHTML = `<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>${escapeHtml(result.error)}</span>`;
     }
   } catch (error) {
-    resultSpan.innerHTML = `<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>${error.message}</span>`;
+    resultSpan.innerHTML = `<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>${escapeHtml(error.message)}</span>`;
   }
 }
 
