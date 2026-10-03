@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.29] - 2026-10-03
+
+### Changed
+
+- **Support footer rendered by the UI kit**: the GitHub / npm links at the bottom of the config UI are now drawn by `MpKit.Footer.render` instead of hand-written markup, so every @mp-consulting plugin shows the same links, separators and icons.
+- **`@mp-consulting/homebridge-ui-kit` 1.1.0**: helper output is HTML-escaped, settings cards and tab borders are visible in the light theme, the active tab keeps WCAG AA contrast in dark mode, and the footer icons are inline SVG so they no longer depend on an icon font.
+
 ## [1.0.28] - 2026-10-03
 
 ### Security
