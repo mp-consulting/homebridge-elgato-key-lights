@@ -5,7 +5,7 @@
 ### Added
 
 - **Assistant in the config UI.** When an AI provider is set up in Homebridge AI Kit (the shared `HomebridgeAiKit` platform block), an **Explain** button appears next to a failed discovery, a light added by IP that did not answer, lights that are offline or have no MAC address, an unavailable light's status and a failed connection test. The explanation streams into an Assistant panel, with Key Light context (mDNS `_elg._tcp`, HTTP API on port 9123, `useIP`, polling and the usual network errors). Only the error (IP/MAC/hostnames masked), the `useIP`/polling settings and non-sensitive light facts (name, model, firmware, port, flags) are sent: never IP addresses, hostnames, MAC addresses or serial numbers. Without the AI Kit nothing changes, apart from a small tip under the light list.
-- `homebridge-ui/server.js` registers the `/ai/status`, `/ai/explain`, `/ai/ask` and `/ai/config` routes with `registerAiRoutes` from `@mp-consulting/homebridge-ai-kit/plugin` (new runtime dependency).
+- `homebridge-ui/server.js` registers the `/ai/status`, `/ai/explain`, `/ai/ask` and `/ai/config` routes with `registerAiRoutes` from `@mp-consulting/homebridge-ai-core/plugin` (new runtime dependency: the slim core of Homebridge AI Kit, so the plugin does not pull in the MCP SDK, socket.io or zod).
 
 ### Changed
 
@@ -13,7 +13,7 @@
 
 ### Release blockers
 
-- `@mp-consulting/homebridge-ai-kit` (`file:../homebridge-mcp-server`) and `@mp-consulting/homebridge-ui-kit` (`file:../homebridge-ui-kit`) are local, unpublished checkouts. Change them to `^2.0.0` and `^1.2.0` once published, and regenerate `package-lock.json`.
+- `@mp-consulting/homebridge-ai-core` (`file:../homebridge-mcp-server/packages/ai-core`) and `@mp-consulting/homebridge-ui-kit` (`file:../homebridge-ui-kit`) are local, unpublished checkouts. Change them to `^2.0.0` and `^1.2.0` once published, and regenerate `package-lock.json`.
 
 ## [1.0.30] - 2026-10-03
 
