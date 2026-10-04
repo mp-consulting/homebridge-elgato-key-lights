@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.1] - 2026-10-04
+
+### Fixed
+
+- **Assistant answer panel layout** (`@mp-consulting/homebridge-ui-kit` 1.2.1). The panel's header no longer squeezes the title into a narrow column next to the "Assistant" badge: it wraps onto its own line when there is not enough room. The panel is also `width: 100%` with `box-sizing: border-box` and `min-width: 0`, so long words and URLs wrap instead of widening its container. The answer slots themselves were already full width (each light's answer is its own row in the light list, which is not a scroll container), so no plugin markup changed.
+
 ## [1.1.0] - 2026-10-04
 
 ### Added
