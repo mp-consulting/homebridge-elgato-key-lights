@@ -1,7 +1,7 @@
 {
   "displayName": "Elgato Key Lights",
   "name": "@mp-consulting/homebridge-elgato-key-lights",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A Homebridge plugin for Elgato Key Light and Key Light Air",
   "author": "MP Consulting",
   "license": "MIT",
@@ -50,7 +50,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@mp-consulting/homebridge-ui-kit": "^1.2.1",
+    "@mp-consulting/homebridge-ui-kit": "^1.2.2",
     "@types/node": "^26.5.0",
     "@vitest/coverage-v8": "^5.0.0",
     "@vitest/ui": "^5.0.0",
