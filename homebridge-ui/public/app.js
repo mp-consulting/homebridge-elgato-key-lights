@@ -42,6 +42,154 @@ let configuredDevices = [];
 let currentDeviceIndex = -1;
 let initialized = false;
 
+// ── Assistant (Homebridge AI Kit) ──────────────────────────────
+// Shown only when the shared HomebridgeAiKit platform is set up and enabled.
+
+let assistantEnabled = false;
+let assistantSettings = {};
+
+async function initAssistant() {
+  let available = false;
+  try {
+    if (window.MpKit && MpKit.ai) {
+      const status = await MpKit.ai.status();
+      available = true;
+      assistantEnabled = !!(status && status.enabled);
+    }
+  } catch {
+    // Routes missing or older Homebridge UI: no Assistant
+  }
+  if (assistantEnabled) {
+    try {
+      const pluginConfig = await homebridge.getPluginConfig();
+      assistantSettings = (pluginConfig && pluginConfig[0]) || {};
+    } catch {
+      assistantSettings = {};
+    }
+  }
+  if (available && !assistantEnabled) {
+    document.getElementById('assistant-hint').classList.remove('d-none');
+  }
+}
+
+/**
+ * Error text sent to the Assistant: device IP addresses, MAC addresses and .local
+ * hostnames (they appear in network errors such as "connect ECONNREFUSED 192.168.1.5:9123") are masked.
+ */
+function scrubAddresses(text) {
+  return String(text ?? '')
+    .replace(/\b(?:[0-9a-f]{1,2}[:-]){5}[0-9a-f]{1,2}\b/gi, '<MAC>')
+    .replace(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g, '<light IP>')
+    .replace(/\[[0-9a-f:]*:[0-9a-f:]*\]/gi, '<light IP>')
+    .replace(/\b[\w-]+\.local\b/gi, '<light hostname>.local');
+}
+
+// Light facts the Assistant may see: no IP addresses, hostnames, MAC addresses or serial numbers
+function assistantDevice(device, deviceInfo) {
+  return {
+    name: device.displayName || device.name,
+    model: device.model || 'Key Light',
+    firmwareVersion: deviceInfo?.firmwareVersion,
+    online: device.online,
+    enabledInHomeKit: device.enabled !== false,
+    inConfig: configuredDevices.some(c => c.mac && c.mac === device.mac),
+    hasMacAddress: !!device.mac,
+    hasConfiguredIp: !!device.ip,
+    port: toNumber(device.port, ELGATO_DEFAULT_PORT) || ELGATO_DEFAULT_PORT,
+    powerOnBehavior: device.powerOnBehavior ?? POWER_ON_BEHAVIOR.USE_GLOBAL,
+  };
+}
+
+// Plugin settings the Assistant may see (no addresses)
+function assistantContext(extra) {
+  const pollingRate = toNumber(assistantSettings.pollingRate, 1000) || 1000;
+  return [
+    extra,
+    assistantSettings.useIP ? 'useIP is on (the plugin connects to IP addresses).' : 'useIP is off (the plugin connects to .local hostnames).',
+    `Polling rate: ${pollingRate} ms.`,
+    `${configuredDevices.length} light(s) in the configuration.`,
+  ].filter(Boolean).join(' ');
+}
+
+// Streams an explanation of `error` into `answerEl`
+async function explainWithAssistant(button, answerEl, { error, context, device, title }) {
+  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
+  answerEl.classList.remove('d-none');
+  const answer = MpKit.ai.renderAnswer(answerEl, { title });
+  try {
+    const res = await MpKit.ai.explain({ error: scrubAddresses(error), context, device }, { onChunk: answer.append });
+    answer.done(res);
+  } catch (e) {
+    answer.error(e);
+  } finally {
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+  }
+}
+
+// Shows an error in `containerId`, with an "Explain" button when the Assistant is on
+function showProblem(containerId, { message, context, device, title, variant = 'danger', icon = 'bi-exclamation-triangle' }) {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    return;
+  }
+  container.classList.remove('d-none');
+  container.innerHTML = `
+    <div class="alert alert-${variant} mb-0">
+      <div class="d-flex justify-content-between align-items-start gap-2">
+        <div><i class="bi ${icon} me-2"></i>${escapeHtml(message)}</div>
+        ${assistantEnabled ? MpKit.ai.renderButton({ label: 'Explain', size: 'sm', className: 'flex-shrink-0 js-explain' }) : ''}
+      </div>
+    </div>
+    <div class="assistant-answer mt-2 d-none"></div>
+  `;
+  if (assistantEnabled) {
+    const button = container.querySelector('.js-explain');
+    const answerEl = container.querySelector('.assistant-answer');
+    button.addEventListener('click', () => explainWithAssistant(button, answerEl, {
+      error: message,
+      context: assistantContext(context),
+      device,
+      title,
+    }));
+  }
+}
+
+function clearProblem(containerId) {
+  const container = document.getElementById(containerId);
+  if (container) {
+    container.classList.add('d-none');
+    container.innerHTML = '';
+  }
+}
+
+// Why a light in the list needs attention, or null when it looks fine
+function deviceProblem(device) {
+  if (device.online === false) {
+    return 'This light did not answer during the 5 second mDNS discovery scan, so it is shown as offline.';
+  }
+  if (device.online !== null && !device.mac) {
+    return 'This light has no MAC address in the configuration, so the plugin skips it (lights are keyed by MAC address).';
+  }
+  return null;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
+function explainDevice(index, button) {
+  const device = discoveredDevices[index];
+  const answerEl = document.getElementById(`assistant-answer-${index}`);
+  if (!device || !answerEl) {
+    return;
+  }
+  explainWithAssistant(button, answerEl, {
+    error: deviceProblem(device) || 'The light does not respond as expected.',
+    context: assistantContext('The user is looking at the light list of the Elgato Key Lights plugin settings.'),
+    device: assistantDevice(device),
+    title: `Why does ${device.displayName || device.name || 'this light'} need attention?`,
+  });
+}
+
 // Initialize when homebridge is ready
 if (typeof homebridge !== 'undefined') {
   homebridge.addEventListener('ready', () => {
@@ -75,6 +223,8 @@ async function onHomebridgeReady() {
   } catch {
     // getUserSettings not available in older versions — keep the early-detected theme
   }
+
+  await initAssistant();
 
   // Step 1: Load and display configured devices immediately
   await loadConfiguredDevices();
@@ -176,6 +326,7 @@ async function addDeviceByIp() {
   }
 
   const btn = document.getElementById('addManualSubmit');
+  clearProblem('devices-problem');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Adding...';
 
@@ -210,8 +361,21 @@ async function addDeviceByIp() {
     document.getElementById('manualPort').value = String(ELGATO_DEFAULT_PORT);
 
     showToast(result.success ? `Added ${deviceName}` : `Added device at ${ip} (offline — check IP/port)`, result.success ? 'success' : 'info');
+    if (!result.success) {
+      showProblem('devices-problem', {
+        message: `The light at ${ip}:${port} was added but did not answer: ${result.error || 'no response'}`,
+        context: 'Adding a light manually by IP address and port in the plugin settings; the settings UI asked the light for /elgato/accessory-info with a 3 second timeout.',
+        title: 'Why did the light not answer?',
+        variant: 'warning',
+      });
+    }
   } catch (error) {
     showToast(`Failed to add device: ${error.message}`, 'danger');
+    showProblem('devices-problem', {
+      message: `Failed to add the light at ${ip}:${port}: ${error.message}`,
+      context: 'Adding a light manually by IP address and port in the plugin settings failed.',
+      title: 'Why did adding the light fail?',
+    });
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Add';
@@ -223,6 +387,7 @@ async function discoverDevices() {
 
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner-border spinner-discover me-1" role="status" aria-hidden="true"></span> Scanning...';
+  clearProblem('devices-problem');
 
   try {
     const discovered = await homebridge.request('/discover');
@@ -246,6 +411,11 @@ async function discoverDevices() {
     discoveredDevices = discoveredDevices.map(d => ({ ...d, online: false }));
     renderDevices(discoveredDevices);
     showToast('Discovery failed: ' + error.message, 'danger');
+    showProblem('devices-problem', {
+      message: `Discovery failed: ${error.message}`,
+      context: 'The plugin settings ran a 5 second mDNS/Bonjour scan for _elg._tcp services from the Homebridge server and it failed.',
+      title: 'Why did discovery fail?',
+    });
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="bi bi-search me-1"></i> Discover';
@@ -353,6 +523,14 @@ function renderDevices(devices) {
       : isOffline
         ? MpKit.StatusBadge.offline()
         : MpKit.StatusBadge.online();
+    const hasProblem = assistantEnabled && !!deviceProblem(device);
+    const explainButton = hasProblem
+      ? MpKit.ai.renderButton({ label: 'Explain', size: 'sm', className: 'me-2 js-explain-device', title: 'Explain this light problem' })
+        .replace('<button ', `<button onclick="event.stopPropagation(); explainDevice(${index}, this)" `)
+      : '';
+    const answerRow = hasProblem
+      ? `<div class="list-group-item assistant-answer d-none" id="assistant-answer-${index}"></div>`
+      : '';
     return `
         <div class="list-group-item mp-device-card d-flex justify-content-between align-items-center gap-2 py-3 ${isOffline ? 'opacity-50' : ''}" onclick="showSettingsView(${index})">
           <div class="d-flex align-items-center min-w-0">
@@ -372,6 +550,7 @@ function renderDevices(devices) {
             </div>
           </div>
           <div class="d-flex align-items-center flex-shrink-0">
+            ${explainButton}
             <button class="btn btn-link text-body-secondary p-0 btn-touch" title="Remove device" aria-label="Remove device"
               onclick="event.stopPropagation(); confirmRemove(${index}, this)">
               <i class="bi bi-trash"></i>
@@ -379,6 +558,7 @@ function renderDevices(devices) {
             <i class="bi bi-chevron-right text-body-secondary"></i>
           </div>
         </div>
+        ${answerRow}
       `;
   }).join('')}
     </div>
@@ -504,10 +684,9 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
             </button>
             <span id="testResult" class="ms-sm-2"></span>
           </div>
+          <div id="device-problem" class="mt-3 d-none"></div>
         ` : `
-          <div class="alert alert-secondary">
-            <i class="bi bi-wifi-off me-2"></i>Device is offline. Status unavailable.
-          </div>
+          <div id="device-problem"></div>
         `}
       </div>
 
@@ -633,6 +812,19 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
       </div>
     </div>
   `;
+
+  if (!currentState) {
+    showProblem('device-problem', {
+      message: device.online
+        ? 'The light was found, but its status could not be read.'
+        : 'Device is offline. Status unavailable.',
+      context: 'The user opened the settings of one light; the settings UI could not read /elgato/accessory-info and /elgato/lights from it.',
+      device: assistantDevice(device, deviceInfo),
+      title: `Why is ${device.displayName || device.name || 'this light'} unavailable?`,
+      variant: 'secondary',
+      icon: 'bi-wifi-off',
+    });
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML oninput
@@ -692,16 +884,29 @@ async function testConnection(index) {
   const host = device.addresses?.[0] || device.ip || device.host;
   const resultSpan = document.getElementById('testResult');
   resultSpan.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Testing...';
+  clearProblem('device-problem');
+
+  const showTestFailure = (message) => {
+    resultSpan.innerHTML = `<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>${escapeHtml(message)}</span>`;
+    if (assistantEnabled) {
+      showProblem('device-problem', {
+        message: `Connection test failed: ${message}`,
+        context: 'The user clicked Test Connection in the settings of one light; the settings UI requested /elgato/accessory-info with a 3 second timeout.',
+        device: assistantDevice(device),
+        title: 'Why did the connection test fail?',
+      });
+    }
+  };
 
   try {
     const result = await homebridge.request('/device/test', { host, port: device.port || ELGATO_DEFAULT_PORT });
     if (result.success) {
       resultSpan.innerHTML = `<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Connected (${toNumber(result.latency)}ms)</span>`;
     } else {
-      resultSpan.innerHTML = `<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>${escapeHtml(result.error)}</span>`;
+      showTestFailure(result.error || 'Connection failed');
     }
   } catch (error) {
-    resultSpan.innerHTML = `<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>${escapeHtml(error.message)}</span>`;
+    showTestFailure(error.message);
   }
 }
 

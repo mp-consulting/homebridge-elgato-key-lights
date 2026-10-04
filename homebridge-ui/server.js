@@ -5,6 +5,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+import { registerAssistant } from './assistant.js';
 import { buildDeviceUrl } from './validation.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,6 +33,9 @@ class KeyLightsUiServer extends HomebridgePluginUiServer {
       ['/device/test', this.testConnection],
     ];
     routes.forEach(([path, handler]) => this.onRequest(path, handler.bind(this)));
+
+    // Assistant: /ai/status, /ai/explain, /ai/ask, /ai/config (configured in Homebridge AI Kit)
+    registerAssistant(this);
 
     this.ready();
   }

@@ -75,9 +75,16 @@
           </div>
         </div>
         <div class="card-body p-0">
+          <!-- Discovery / add errors + Assistant explanation (filled by app.js) -->
+          <div id="devices-problem" class="p-3 d-none"></div>
           <div id="deviceList"></div>
         </div>
       </div>
+
+      <p id="assistant-hint" class="small text-body-secondary mt-3 mb-0 d-none">
+        <i class="bi bi-info-circle me-1"></i>Tip: install and enable <strong>Homebridge AI Kit</strong> to get the Assistant,
+        which explains discovery and connection problems here.
+      </p>
 
       <div class="mp-footer"></div>
     </div>

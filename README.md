@@ -13,6 +13,7 @@ A [Homebridge](https://homebridge.io) plugin for controlling [Elgato Key Light](
 - Real-time state synchronization with polling
 - Configure power-on behavior and default settings
 - Custom UI for device management in Homebridge Config UI X
+- **Assistant (optional)** - Explains discovery, connection and offline-light problems in the config UI, using the AI provider you set up in Homebridge AI Kit
 
 ## Requirements
 
@@ -141,6 +142,29 @@ If you experience intermittent connection problems:
 2. Power cycle your Key Light
 3. Check the Homebridge logs for error messages
 
+## Assistant
+
+The config UI can explain problems with the **Assistant**. It is off until you set up
+an AI provider once for all MP Consulting plugins in
+[Homebridge AI Kit](https://github.com/mp-consulting/homebridge-ai-kit) (or the
+Homebridge Glass UI): the plugin reads the shared `HomebridgeAiKit` platform block from
+`config.json` and has no AI settings of its own. When it is not set up, the UI looks
+exactly as before, with a small tip under the light list.
+
+When it is enabled, **Explain** buttons appear next to a failed discovery, a light added
+by IP that did not answer, every light that is offline or has no MAC address, an
+unavailable light's status, and a failed **Test Connection**. The answer streams into an
+Assistant panel below.
+
+What is sent to the provider: the error message (with IP addresses, MAC addresses and
+`.local` hostnames masked), the `useIP` and polling-rate settings, the number of
+configured lights, and for a light its name, model, firmware version, port, power-on
+behaviour and online/enabled/has-MAC flags. IP addresses, hostnames, MAC addresses and
+serial numbers are never sent, and the provider's API key stays on the Homebridge server.
+
+The light settings are edited per light in the custom UI, so there is no
+"Describe Your Setup" config assistant in this plugin.
+
 ## Development
 
 ```bash
@@ -160,6 +184,12 @@ npm run watch
 # Lint
 npm run lint
 ```
+
+The build vendors `@mp-consulting/homebridge-ui-kit` and Bootstrap into
+`homebridge-ui/public/lib/` with `mp-ui-kit-copy --vendor`. Until
+`@mp-consulting/homebridge-ai-kit` 2.0.0 and `@mp-consulting/homebridge-ui-kit` 1.2.0
+are published, both are installed from sibling checkouts (`file:../homebridge-mcp-server`
+and `file:../homebridge-ui-kit`); they must become `^2.0.0` and `^1.2.0` before release.
 
 ## Project Structure
 
