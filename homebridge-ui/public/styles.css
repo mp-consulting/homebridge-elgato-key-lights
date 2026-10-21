@@ -376,9 +376,27 @@ body {
   outline-offset: 4px;
 }
 
-/* The kit's hover lift sticks after a tap on touch screens */
-@media (hover: none) {
-  .mp-device-card:hover {
+/* The whole row opens the settings, but its role="button" sits on the info
+   block (the row also holds Remove and Explain), so the kit's interactive-card
+   rules, which need the role on the card itself, are repeated here */
+.mp-device-card:has(.device-open) {
+  cursor: pointer;
+  transition: transform 160ms var(--mp-ease-out, cubic-bezier(0.23, 1, 0.32, 1)), box-shadow 160ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mp-device-card:has(.device-open):hover {
+    transform: translateY(-1px);
+    box-shadow: var(--mp-shadow-hover) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-device-card:has(.device-open) {
+    transition: none;
+  }
+
+  .mp-device-card:has(.device-open):hover {
     transform: none;
   }
 }

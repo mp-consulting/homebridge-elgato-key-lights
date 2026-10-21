@@ -4,6 +4,7 @@
 
 ### Changed
 
+- **Settings page** uses `@mp-consulting/homebridge-ui-kit` 1.4.0: long device names wrap to two lines, tabs scroll instead of wrapping, buttons press in, hover effects only apply with a mouse or trackpad, dialogs and toasts ease in and out, and the Assistant glow no longer repaints every frame.
 - **Settings page**: the brightness and temperature sliders have a 44px touch area, a visible keyboard focus ring, a thumb that grows while held, steady digits, linked labels and spoken values. The default sliders dim and disable when "Use default settings" is not selected, and the Status bars use the same gradients as the sliders.
 - **Settings page**: the manual-add form and the settings tabs ease in (opacity only with reduced motion).
 
