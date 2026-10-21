@@ -42,7 +42,7 @@
           </h5>
           <div class="d-flex gap-2">
             <!-- text-nowrap keeps icon and label on one line on narrow screens -->
-            <button class="btn btn-outline-secondary btn-sm text-nowrap" id="addManualBtn" onclick="toggleManualAdd()">
+            <button class="btn btn-outline-secondary btn-sm text-nowrap" id="addManualBtn" aria-expanded="false" aria-controls="manualAddForm" onclick="toggleManualAdd()">
               <i class="bi bi-plus me-1"></i>Add<span class="d-none d-sm-inline"> manually</span>
             </button>
             <button class="btn btn-primary btn-sm text-nowrap" id="discoverBtn" onclick="discoverDevices()">
@@ -50,27 +50,32 @@
             </button>
           </div>
         </div>
-        <div id="manualAddForm" class="d-none border-bottom px-3 py-3">
-          <!-- Phones: IP on its own row, then port and the buttons; wider screens: one row -->
-          <div class="row g-2 align-items-end">
-            <div class="col-12 col-sm">
-              <label class="form-label small mb-1" for="manualIp">IP Address</label>
-              <input type="text" class="form-control form-control-sm" id="manualIp" placeholder="192.168.3.108"
-                autocapitalize="off" autocorrect="off" spellcheck="false"
-                onkeydown="if(event.key==='Enter') addDeviceByIp()">
-            </div>
-            <div class="col-4 col-sm-auto">
-              <label class="form-label small mb-1" for="manualPort">Port</label>
-              <input type="number" class="form-control form-control-sm manual-port" id="manualPort" value="9123" inputmode="numeric"
-                onkeydown="if(event.key==='Enter') addDeviceByIp()">
-            </div>
-            <div class="col-8 col-sm-auto d-flex gap-2">
-              <button class="btn btn-primary btn-sm flex-fill text-nowrap" id="addManualSubmit" onclick="addDeviceByIp()">
-                <i class="bi bi-plus-circle me-1"></i>Add
-              </button>
-              <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="toggleManualAdd()">
-                Cancel
-              </button>
+        <!-- Collapsed via .is-open (grid-template-rows animation); inert while closed -->
+        <div id="manualAddForm" class="manual-add" inert>
+          <div class="manual-add-inner">
+            <div class="border-bottom px-3 py-3">
+              <!-- Phones: IP on its own row, then port and the buttons; wider screens: one row -->
+              <div class="row g-2 align-items-end">
+                <div class="col-12 col-sm">
+                  <label class="form-label small mb-1" for="manualIp">IP Address</label>
+                  <input type="text" class="form-control form-control-sm" id="manualIp" placeholder="192.168.3.108"
+                    autocapitalize="off" autocorrect="off" spellcheck="false"
+                    onkeydown="if(event.key==='Enter') addDeviceByIp()">
+                </div>
+                <div class="col-4 col-sm-auto">
+                  <label class="form-label small mb-1" for="manualPort">Port</label>
+                  <input type="number" class="form-control form-control-sm manual-port" id="manualPort" value="9123" inputmode="numeric"
+                    onkeydown="if(event.key==='Enter') addDeviceByIp()">
+                </div>
+                <div class="col-8 col-sm-auto d-flex gap-2">
+                  <button class="btn btn-primary btn-sm flex-fill text-nowrap" id="addManualSubmit" onclick="addDeviceByIp()">
+                    <i class="bi bi-plus-circle me-1"></i>Add
+                  </button>
+                  <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="toggleManualAdd()">
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -261,7 +261,6 @@ function showListView() {
   renderDevices(discoveredDevices);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
 function showSettingsView(index) {
   currentDeviceIndex = index;
   MpKit.View.show('settingsView');
@@ -303,9 +302,21 @@ async function removeDevice(index) {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
 function toggleManualAdd() {
   const form = document.getElementById('manualAddForm');
-  form.classList.toggle('d-none');
-  if (!form.classList.contains('d-none')) {
+  setManualAddOpen(!form.classList.contains('is-open'));
+}
+
+// Opens or closes the manual-add form; while closed it is inert (no focus, hidden from assistive tech)
+function setManualAddOpen(open) {
+  const form = document.getElementById('manualAddForm');
+  form.classList.toggle('is-open', open);
+  form.inert = !open;
+  const toggleBtn = document.getElementById('addManualBtn');
+  toggleBtn.setAttribute('aria-expanded', String(open));
+  if (open) {
     document.getElementById('manualIp').focus();
+  } else if (form.contains(document.activeElement)) {
+    // Focus inside an inert subtree is lost; hand it back to the toggle
+    toggleBtn.focus();
   }
 }
 
@@ -356,7 +367,7 @@ async function addDeviceByIp() {
     await saveDevicesToConfig(discoveredDevices);
     renderDevices(discoveredDevices);
 
-    document.getElementById('manualAddForm').classList.add('d-none');
+    setManualAddOpen(false);
     document.getElementById('manualIp').value = '';
     document.getElementById('manualPort').value = String(ELGATO_DEFAULT_PORT);
 
@@ -533,7 +544,8 @@ function renderDevices(devices) {
       : '';
     return `
         <div class="list-group-item mp-device-card d-flex justify-content-between align-items-center gap-2 py-3 ${isOffline ? 'opacity-50' : ''}" onclick="showSettingsView(${index})">
-          <div class="d-flex align-items-center min-w-0">
+          <div class="device-open d-flex align-items-center min-w-0" role="button" tabindex="0"
+            onkeydown="onDeviceRowKeydown(event, ${index})">
             <div class="me-2 me-sm-3">
               <i class="bi bi-lightbulb-fill fs-3 ${isOffline ? 'text-secondary' : 'text-warning'}"></i>
             </div>
@@ -563,6 +575,15 @@ function renderDevices(devices) {
   }).join('')}
     </div>
   `;
+}
+
+// Keyboard activation for the device row's open target (Enter / Space)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onkeydown
+function onDeviceRowKeydown(event, index) {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    showSettingsView(index);
+  }
 }
 
 async function loadDeviceSettings(index) {
@@ -652,8 +673,8 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
                   <div class="d-flex align-items-center gap-3">
                     <span class="text-body-secondary status-label">Brightness</span>
                     <div class="flex-grow-1">
-                      <div class="progress" style="height: 14px; background: linear-gradient(to right, #333 0%, #fff 100%); border-radius: 7px;">
-                        <div class="progress-bar" role="progressbar" style="width: ${toNumber(currentState.brightness)}%; background: transparent; border-right: 3px solid var(--mp-primary);"></div>
+                      <div class="progress status-bar status-bar-brightness">
+                        <div class="progress-bar" role="progressbar" style="width: ${toNumber(currentState.brightness)}%;"></div>
                       </div>
                     </div>
                     <span class="fw-bold status-value">${toNumber(currentState.brightness)}%</span>
@@ -665,8 +686,8 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
                   <div class="d-flex align-items-center gap-3">
                     <span class="text-body-secondary status-label">Temperature</span>
                     <div class="flex-grow-1">
-                      <div class="progress" style="height: 14px; background: linear-gradient(to right, #ff9329 0%, #fff 50%, #9fc5ff 100%); border-radius: 7px;">
-                        <div class="progress-bar" role="progressbar" style="width: ${toNumber(tempPercent)}%; background: transparent; border-right: 3px solid var(--mp-primary);"></div>
+                      <div class="progress status-bar status-bar-temperature">
+                        <div class="progress-bar" role="progressbar" style="width: ${toNumber(tempPercent)}%;"></div>
                       </div>
                     </div>
                     <span class="fw-bold status-value">${kelvinTemp ? toNumber(kelvinTemp) + 'K' : 'N/A'}</span>
@@ -722,14 +743,14 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
               </div>
 
               <!-- Right column: Default power-on values -->
-              <div class="col-md-6">
+              <div class="col-md-6 power-on-defaults" id="powerOnDefaults">
                 <h6 class="mp-label mb-1"><i class="bi bi-sliders2 me-2"></i>Default Power On Settings</h6>
                 <p class="small text-body-secondary mb-4">Used when "Use default settings below" is selected.</p>
 
                 <!-- Brightness Slider -->
                 <div class="mb-4">
                   <div class="d-flex justify-content-between align-items-center mb-2">
-                    <label class="form-label mb-0">
+                    <label class="form-label mb-0" for="powerOnBrightness">
                       <i class="bi bi-brightness-high me-2"></i>Brightness
                     </label>
                     <span class="slider-value" id="brightnessValue">${toNumber(device.powerOnBrightness, BRIGHTNESS_DEFAULT) || BRIGHTNESS_DEFAULT}%</span>
@@ -737,6 +758,7 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
                   <div class="slider-container">
                     <input type="range" class="brightness-slider" id="powerOnBrightness"
                       min="${BRIGHTNESS_MIN}" max="${BRIGHTNESS_MAX}" value="${toNumber(device.powerOnBrightness, BRIGHTNESS_DEFAULT) || BRIGHTNESS_DEFAULT}"
+                      aria-valuetext="${toNumber(device.powerOnBrightness, BRIGHTNESS_DEFAULT) || BRIGHTNESS_DEFAULT}%"
                       oninput="updateBrightnessValue(this.value)">
                     <div class="slider-label">
                       <span>${BRIGHTNESS_MIN}%</span>
@@ -748,7 +770,7 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
                 <!-- Temperature Slider -->
                 <div class="mb-0">
                   <div class="d-flex justify-content-between align-items-center mb-2">
-                    <label class="form-label mb-0">
+                    <label class="form-label mb-0" for="powerOnTemperature">
                       <i class="bi bi-thermometer-half me-2"></i>Color Temperature
                     </label>
                     <span class="slider-value" id="temperatureValue">${toNumber(device.powerOnTemperature, TEMPERATURE_DEFAULT) || TEMPERATURE_DEFAULT}K</span>
@@ -756,6 +778,7 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
                   <div class="slider-container">
                     <input type="range" class="temperature-slider" id="powerOnTemperature"
                       min="${TEMPERATURE_MIN}" max="${TEMPERATURE_MAX}" step="${TEMPERATURE_STEP}" value="${toNumber(device.powerOnTemperature, TEMPERATURE_DEFAULT) || TEMPERATURE_DEFAULT}"
+                      aria-valuetext="${toNumber(device.powerOnTemperature, TEMPERATURE_DEFAULT) || TEMPERATURE_DEFAULT}K"
                       oninput="updateTemperatureValue(this.value)">
                     <div class="slider-label">
                       <span>${TEMPERATURE_MIN}K (Warm)</span>
@@ -771,7 +794,7 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
 
         <div class="d-flex justify-content-sm-end gap-2">
           <button class="btn btn-secondary flex-fill flex-sm-grow-0" onclick="showListView()">Cancel</button>
-          <button class="btn btn-primary flex-fill flex-sm-grow-0 text-nowrap" onclick="saveDeviceSettings(${currentDeviceIndex})">
+          <button class="btn btn-primary flex-fill flex-sm-grow-0 text-nowrap" id="saveSettingsBtn" onclick="saveDeviceSettings(${currentDeviceIndex})">
             <i class="bi bi-check-lg me-1"></i> Save Settings
           </button>
         </div>
@@ -813,6 +836,9 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
     </div>
   `;
 
+  document.getElementById('powerOnBehavior').addEventListener('change', updatePowerOnDefaultsState);
+  updatePowerOnDefaultsState();
+
   if (!currentState) {
     showProblem('device-problem', {
       message: device.online
@@ -830,11 +856,21 @@ function renderDeviceSettings(device, deviceInfo, currentState) {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML oninput
 function updateBrightnessValue(value) {
   document.getElementById('brightnessValue').textContent = value + '%';
+  document.getElementById('powerOnBrightness').setAttribute('aria-valuetext', value + '%');
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML oninput
 function updateTemperatureValue(value) {
   document.getElementById('temperatureValue').textContent = value + 'K';
+  document.getElementById('powerOnTemperature').setAttribute('aria-valuetext', value + 'K');
+}
+
+// The default power-on sliders only apply with "Use default settings below": dim and disable them otherwise
+function updatePowerOnDefaultsState() {
+  const usesDefaults = parseInt(document.getElementById('powerOnBehavior').value) === POWER_ON_BEHAVIOR.USE_DEFAULT;
+  document.getElementById('powerOnDefaults').classList.toggle('is-inactive', !usesDefaults);
+  document.getElementById('powerOnBrightness').disabled = !usesDefaults;
+  document.getElementById('powerOnTemperature').disabled = !usesDefaults;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- called from HTML onclick
@@ -849,6 +885,10 @@ async function saveDeviceSettings(index) {
 
   discoveredDevices[index] = device;
 
+  const btn = document.getElementById('saveSettingsBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Saving...';
+
   try {
     await saveDevicesToConfig(discoveredDevices);
     showToast('Device settings saved', 'success');
@@ -856,6 +896,9 @@ async function saveDeviceSettings(index) {
   } catch (e) {
     console.error('[KeyLights] Failed to save device settings:', e);
     showToast(`Save failed: ${e.message}`, 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Save Settings';
   }
 }
 
