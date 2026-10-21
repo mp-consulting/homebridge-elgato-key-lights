@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- **Settings page**: the brightness and temperature sliders have a 44px touch area, a visible keyboard focus ring, a thumb that grows while held, steady digits, linked labels and spoken values. The default sliders dim and disable when "Use default settings" is not selected, and the Status bars use the same gradients as the sliders.
+- **Settings page**: the manual-add form and the settings tabs ease in (opacity only with reduced motion).
+
+### Fixed
+
+- **Settings page**: device rows can be opened from the keyboard (Enter / Space), and Save Settings shows a spinner and can no longer be pressed twice.
+
 ## [1.1.2] - 2026-10-04
 
 ### Fixed
